@@ -166,7 +166,7 @@ document.addEventListener('click', e => {
   const a = el.dataset.a;
   if (a.startsWith('ob') && ACTIONS[a] === undefined) { if (Intro.handle(a, el)) swap(render); return; }
   if (ACTIONS[a]) return ACTIONS[a](el);
-  if (['theme', 'manage', 'export', 'takeBreak'].includes(a)) Me.handle(a, el, render);
+  if (['theme', 'manage', 'export', 'takeBreak', 'push'].includes(a)) Me.handle(a, el, render);
 });
 document.addEventListener('change', e => {
   if (e.target.matches?.('.switch')) { SOUNDS.tap(); buzz(6); }

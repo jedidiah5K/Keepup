@@ -693,3 +693,6 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .sh-ic .hi { width: .9em; height: .9em; stroke-width: 1.6; }
 .ms-habit { display: inline-flex; align-items: center; gap: .4rem; }
 .ms-ic .hi { width: 1.2rem; height: 1.2rem; color: var(--mc); }
+
+/* Notifications row */
+.pill-on { font: 600 .6rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: .3rem .45rem; border-radius: 6px; background: #15744A; color: #fff; }

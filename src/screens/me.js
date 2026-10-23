@@ -7,6 +7,7 @@ import { SOUNDS } from '../ui/feedback.js';
 import { esc, openSheet, closeSheet, confirmSheet, toast } from '../ui/sheets.js';
 import { cloud, syncLine } from '../lib/session.js';
 import { canInstall, installed } from '../ui/install.js';
+import { pushState, enablePush, disablePush } from '../lib/push.js';
 
 const toggle = (key, label, sub = '') => `<label class="row-set"><span><span>${label}</span>${sub ? `<span class="muted small">${sub}</span>` : ''}</span>
   <input type="checkbox" role="switch" class="switch" data-a="pref" data-k="${key}" ${state.profile[key] !== false ? 'checked' : ''}></label>`;
@@ -31,8 +32,9 @@ export function render() {
       ${toggle('sounds_on', 'Sounds')}${toggle('haptics_on', 'Haptics', 'A little buzz when you tick')}
     </section>
     <section class="group"><div class="g-h">Reminders</div>
+      <div id="push-row">${pushRow(pushRow.last)}</div>
       <label class="row-set"><span><span>Evening check</span><span class="muted small">“You still have 2 habits left today”</span></span><input type="time" class="in-right" data-a="evening" value="${esc(p.evening_reminder_at || '')}" aria-label="Evening reminder time, clear to turn off"></label>
-      <p class="muted small pad">Reminders arrive with the phone app. Each habit can have its own time too.</p>
+      <p class="muted small pad">Each habit can have its own reminder too. Set it when you edit the habit.</p>
     </section>
     <section class="group"><div class="g-h">Habits</div>
       <label class="row-set"><span>Week starts on</span><select class="in-right" data-a="weekstart"><option value="1" ${p.week_start === 1 ? 'selected' : ''}>Monday</option><option value="7" ${p.week_start === 7 ? 'selected' : ''}>Sunday</option></select></label>
@@ -75,7 +77,30 @@ export function openManage(rerender) {
   return sh;
 }
 
+// Notifications row. The state is only known after a check, so the row fills in after render.
+function pushRow(st) {
+  const row = (title, sub, extra = '') => `<span><span>${title}</span><span class="muted small">${sub}</span></span>${extra}`;
+  if (st === 'on') return `<button class="row-set" data-a="push" data-v="off">${row('Notifications', 'On for this phone. Tap to turn off.', '<span class="pill-on">On</span>')}</button>`;
+  if (st === 'off') return `<button class="row-set" data-a="push" data-v="on">${row('Turn on notifications', 'Habit reminders and the evening check')}${I.right}</button>`;
+  if (st === 'blocked') return `<div class="row-set">${row('Notifications are blocked', 'Allow them for KeepUp in your phone’s Settings, then come back.')}</div>`;
+  if (st === 'install') return `<div class="row-set">${row('Notifications', 'Add KeepUp to your Home Screen first (Share → Add to Home Screen), then turn them on here.')}</div>`;
+  if (st === 'unsupported') return `<div class="row-set">${row('Notifications', 'This browser can’t show them. Open KeepUp from your Home Screen.')}</div>`;
+  return `<div class="row-set">${row('Notifications', 'Checking…')}</div>`;
+}
+export function afterRender(root) {
+  pushState().then(st => { pushRow.last = st; const el = root.querySelector('#push-row'); if (el) el.innerHTML = pushRow(st); }).catch(() => {});
+}
+async function togglePush(el, rerender) {
+  el.disabled = true;
+  try {
+    if (el.dataset.v === 'on') { const st = await enablePush(); toast(st === 'on' ? 'Notifications on. You’re set.' : 'Notifications are blocked. Allow them in Settings.'); }
+    else { await disablePush(); toast('Notifications off for this phone.'); }
+  } catch (e) { toast(navigator.onLine ? 'Couldn’t turn notifications on just now. Try again in a bit.' : 'You’re offline. Try again when you’re back online.'); }
+  pushRow.last = null; rerender();
+}
+
 export function handle(a, el, rerender) {
+  if (a === 'push') return togglePush(el, rerender);
   if (a === 'theme') {
     setProfile({ theme: el.dataset.k }); swapTheme(el.dataset.k, el); SOUNDS.theme();
     document.querySelectorAll('[data-a="theme"]').forEach(b => { const on = b === el; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });

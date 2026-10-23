@@ -76,6 +76,7 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   await page.click('[data-a="openStats"][data-id="r"]'); await shot('10-stats-habit');
   await page.click('[data-tab="squad"]'); await shot('11-squad');
   await page.click('[data-tab="me"]'); await shot('12-me');
+  await page.evaluate(() => document.querySelector('#push-row')?.scrollIntoView({ block: 'center' })); await shot('12b-me-reminders');
   await page.click('[data-a="manage"]'); await shot('13-manage');
   await page.keyboard.press('Escape');
   await page.click('[data-a="install"]'); await shot('16-install-guide');

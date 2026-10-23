@@ -112,6 +112,8 @@ export const resetPassword = email => sb.auth.resetPasswordForEmail(email, { red
 export const setPassword = password => sb.auth.updateUser({ password });
 export async function signOut() {
   await sync();
+  // Stop this phone getting the account's reminders once it's signed out.
+  try { const sub = await (await navigator.serviceWorker?.getRegistration())?.pushManager?.getSubscription(); if (sub) { await sb.from('keepup_push_tokens').delete().eq('token', sub.endpoint); await sub.unsubscribe(); } } catch (e) {}
   await sb.auth.signOut();
   // Clear this phone's copy so the next person to sign in here starts clean.
   try { localStorage.removeItem('keepup:v1'); } catch (e) {}

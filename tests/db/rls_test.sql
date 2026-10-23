@@ -130,3 +130,34 @@ select pg_temp.check(not exists (select 1 from auth.users where id = '00000000-0
 select pg_temp.check((select count(*) from keepup_squads where id = :'sq') = 1, 'a squad survives its owner deleting their account when others remain');
 set role anon;
 select pg_temp.fails($$select keepup_delete_account()$$, 'signed-out visitor cannot delete accounts');
+
+-- reminders: due ones go out once, only for phones with notifications on, never during a break
+reset role;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-000000000009', 'r@x.test');
+insert into keepup_profiles (id, timezone, evening_reminder_at)
+  values ('00000000-0000-0000-0000-000000000009', 'Asia/Manila', ((now() at time zone 'Asia/Manila') - interval '2 minutes')::time);
+insert into keepup_habits (id, user_id, name, reminder_time, start_date) values
+  ('30000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-000000000009', 'Water', ((now() at time zone 'Asia/Manila') - interval '3 minutes')::time, current_date - 5),
+  ('30000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-000000000009', 'Read', ((now() at time zone 'Asia/Manila') - interval '1 minute')::time, current_date - 5),
+  ('30000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-000000000009', 'Later', ((now() at time zone 'Asia/Manila') + interval '30 minutes')::time, current_date - 5);
+insert into keepup_checkins (habit_id, user_id, date) values ('30000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-000000000009', (now() at time zone 'Asia/Manila')::date);
+select pg_temp.check((select count(*) from keepup_due_reminders()) = 0, 'no reminders without notifications turned on');
+insert into keepup_push_tokens (user_id, kind, token, keys) values ('00000000-0000-0000-0000-000000000009', 'webpush', 'https://push.example/d', '{"p256dh":"x","auth":"y"}');
+create temp table got as select * from keepup_due_reminders();
+select pg_temp.check((select count(*) from got where title = 'Water') = 1, 'a habit not done yet gets its reminder');
+select pg_temp.check(not exists (select 1 from got where title in ('Read', 'Later')), 'no reminder for a done habit or one not due yet');
+select pg_temp.check((select body from got where tag = 'evening') like '2 habits left%', 'evening check counts what''s left');
+select pg_temp.check((select count(*) from keepup_due_reminders()) = 0, 'each reminder is sent once');
+delete from keepup_push_sent;
+insert into keepup_breaks (id, user_id, start_date, end_date) values (gen_random_uuid(), '00000000-0000-0000-0000-000000000009', current_date - 1, current_date + 3);
+select pg_temp.check((select count(*) from keepup_due_reminders()) = 0, 'no reminders during a break');
+set role authenticated;
+select pg_temp.as_user('a');
+select pg_temp.fails($$select keepup_due_reminders()$$, 'people cannot run the reminder job themselves');
+select pg_temp.check((select count(*) from keepup_push_tokens) = 0, 'others cannot see my notification tokens');
+select keepup_save_push('https://push.example/d', '{"p256dh":"k","auth":"s"}', 'iPhone');
+select pg_temp.check((select count(*) from keepup_push_tokens) = 1, 'a phone used by another account moves to whoever is signed in');
+select pg_temp.fails($$select keepup_save_push('javascript:x', '{"p256dh":"k","auth":"s"}')$$, 'only real push addresses are saved');
+reset role; set role anon;
+select pg_temp.fails($$select keepup_save_push('https://push.example/z', '{"p256dh":"k","auth":"s"}')$$, 'signed-out visitor cannot save a push address');
+reset role;
