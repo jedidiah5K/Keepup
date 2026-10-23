@@ -27,11 +27,11 @@ same everywhere. Nothing else in the stack changes.
 
 | Part | Choice | Cost |
 |---|---|---|
-| Front end | Same framework and build tool as JobDone (to confirm when I see the code), TypeScript, installable PWA with a service worker | $0 |
+| Front end | Vanilla JS like JobDone (no framework), split into modules and built with Vite, installable PWA with a service worker. See `07-jobdone-reuse.md` | $0 |
 | Native shell | Capacitor (current major), Android + iOS projects in this repo | $0 |
-| Database + auth | Supabase (Postgres, Auth, RLS, Edge Functions, pg_cron). Can share your existing free project, with all tables in their own `habits` schema | $0 while small |
+| Database + auth | Supabase (Postgres, Auth, RLS, Edge Functions, pg_cron). Shares JobDone's free project, tables named `keepup_*` like JobDone's `jobdone_*` | $0 while small |
 | Email | Resend (reset emails), same as JobDone | $0 tier |
-| Hosting (web) | Subdomain of your domain on a free static host (whatever JobDone uses) | $0 |
+| Hosting (web) | Vercel like JobDone, same security headers; subdomain of your domain once bought | $0 |
 | Push | Firebase Cloud Messaging (Android, and iPhone via an APNs key), web push (VAPID) for browser users | $0 |
 | Payments | RevenueCat (Capacitor SDK) on top of Google Play Billing and Apple StoreKit, with a webhook to our server | $0 under $2,500/month revenue, then 1% |
 | Bot protection | Cloudflare Turnstile (sign-up, reset) | $0 |
@@ -71,7 +71,7 @@ budget), Google Play $25 (already paid), domain ~$10. Nothing else until real us
 3. Purchase happens through the native store sheet.
 4. RevenueCat verifies the receipt with Google/Apple **on their server**, then calls our
    Supabase Edge Function webhook (signed with a secret).
-5. The webhook writes `habits.subscriptions` with the service role key. The client can't
+5. The webhook writes `keepup_subscriptions` with the service role key. The client can't
    write that table.
 6. The app asks the server "am I Pro?" (a database function reading `subscriptions`).
 7. Restore purchases button; "Manage subscription" opens the store's own page (one tap
@@ -113,4 +113,4 @@ Resend. Rate limits, Turnstile, lockout per the security checklist.
 `@supabase/supabase-js`, `@capacitor/core` + `android` + `ios`,
 `@capacitor/local-notifications`, `@capacitor/push-notifications`, `@capacitor/haptics`,
 `@capacitor/share`, `@capacitor/preferences`, `@revenuecat/purchases-capacitor`,
-`idb` (offline store), `vitest`, `@playwright/test`. Plus whatever JobDone already uses.
+`idb` (offline store), `vite`, `vitest`, `@playwright/test`. supabase-js pinned to a current 2.x (JobDone vendors 2.45.4).

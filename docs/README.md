@@ -9,3 +9,4 @@ Read in this order. All are drafts waiting for Job's approval; no code yet.
 4. [UI/UX brief](04-ui-ux-brief.md): look and feel
 5. [Backend schema](05-backend-schema.md): tables, security rules, sign-in
 6. [Implementation plan](06-implementation-plan.md): build order with checks
+7. [JobDone reuse](07-jobdone-reuse.md): which JobDone pieces we copy, and a few things found there

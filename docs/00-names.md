@@ -1,6 +1,11 @@
 # Name ideas
 
-**Nothing is picked yet.** Until you choose, the docs say "the app".
+**Picked: KeepUp** (Job, 23 Oct 2026). The checks below are kept for the record.
+
+Because an App Store habit app is already called "Habit Tracker - Keep Up!", we make KeepUp
+stand apart: store title **"KeepUp: Habits with Friends"**, our own icon and colours, and the
+squad feature front and centre in the listing. Search the USPTO/EUIPO trademark databases
+for "KeepUp" in class 9 (software) before launch.
 
 Checked on 23 Oct 2026. Domains were checked with a live registry lookup. Store and
 trademark checks were web searches, so they catch obvious clashes but are not a legal

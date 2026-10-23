@@ -6,7 +6,7 @@ on. Steps that touch money, publishing, or JobDone wait for Job's OK.
 
 | # | Step | Done when (the check) |
 |---|------|-----------------------|
-| 1 | **Plan docs** (this folder) | Job approves the docs and picks a name |
+| 1 | **Plan docs** (this folder) | Job approves the docs (name picked: KeepUp) |
 | 2 | **Copy reusable parts from JobDone**: auth screens, theme system, share card renderer, streak/badge logic, intro flow, settings, sounds/haptics. JobDone itself is never changed. | Project builds; copied pieces render with placeholder data; screenshot of auth + theme picker |
 | 3 | **Native shell early**: add Capacitor Android + iOS projects, app id, icons placeholder | App opens on an Android emulator and an iOS simulator/cloud build showing the web app |
 | 4 | **Database + RLS + auth**: `habits` schema, tables, RLS, triggers, email/Google/Apple sign-in, Turnstile | SQL tests prove: user A can't read B's data; squadmate sees only shared habits; client can't write `subscriptions` |
@@ -47,8 +47,8 @@ step 15 starts as soon as step 12 works, and steps 13–14 happen during the tes
 
 ## Things I need from Job along the way
 
-- Name pick (now).
-- The JobDone code: a GitHub repo to attach to this project, or a zip upload (step 2).
+- ~~Name~~ KeepUp. ~~JobDone code~~ github.com/jedidiah5K/JobDone.
+- Domain: buy now, or start on a free vercel.app address (step 4).
 - Whether you have a Mac (step 3).
 - The Supabase project to use and which domain/subdomain (step 4).
 - Apple Developer account sign-up, $99 (by step 8, needed for push and TestFlight).

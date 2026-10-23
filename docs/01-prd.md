@@ -1,6 +1,6 @@
 # 1. Product requirements (PRD)
 
-Status: draft for Job's approval. Name not picked yet, so it's "the app" here.
+Status: draft for Job's approval. App name: **KeepUp** (store title "KeepUp: Habits with Friends").
 
 ## Overview
 
@@ -116,8 +116,9 @@ old check-in notes stay readable).
 
 ## Open questions for Job
 
-1. Name (see `00-names.md`).
+1. ~~Name~~ KeepUp, picked 23 Oct.
 2. Streak freeze: is the free freeze **per habit** (each habit gets 1 a week) or **one
    per account** shared by all habits? I suggest per habit: it's simpler to understand and
    avoids "which habit used my freeze?".
 3. Do you have a Mac? Building the iPhone app needs Xcode (see TRD for a free cloud option).
+4. Domain: buy one now, or start on a free `keepup-….vercel.app` address?

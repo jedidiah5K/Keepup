@@ -1,8 +1,9 @@
 # 5. Backend schema
 
-Supabase Postgres. Everything lives in its own schema **`habits`** so it can share your
-existing free Supabase project with JobDone without mixing data. (`habits` gets added to
-the project's "exposed schemas" setting; RLS is on for every table.)
+Supabase Postgres, sharing JobDone's free project. Like JobDone's `jobdone_*` tables, every
+KeepUp table lives in `public` with a **`keepup_` prefix** (`keepup_profiles`,
+`keepup_habits`, `keepup_checkins`…). Names below drop the prefix for readability. RLS is on
+for every table, so KeepUp and JobDone data never mix, and JobDone's tables are not touched.
 
 Changes from the draft in the prompt are marked **(new)** or **(changed)**.
 
@@ -21,7 +22,7 @@ Changes from the draft in the prompt are marked **(new)** or **(changed)**.
 | age_confirmed_at | timestamptz | **(new)** when the 13+ gate passed |
 | created_at | timestamptz | |
 
-### habits (table name `habit`, to avoid clashing with the schema name)
+### habits
 | column | type | notes |
 |---|---|---|
 | id | uuid PK | made on the phone (offline-safe) |
@@ -43,7 +44,7 @@ Changes from the draft in the prompt are marked **(new)** or **(changed)**.
 | column | type | notes |
 |---|---|---|
 | id | uuid PK | made on the phone |
-| habit_id | uuid → habit, cascade | |
+| habit_id | uuid → habits, cascade | |
 | user_id | uuid → profiles | |
 | date | date | the user's **local** date |
 | count | int | 0–1000 |
@@ -93,23 +94,23 @@ ip_hash, created_at. Server only; no passwords or tokens ever stored.
 ## Relations
 
 ```
-profiles 1─* habit 1─* checkins
+profiles 1─* habits 1─* checkins
 profiles 1─* squad_members *─1 squads 1─1 squad_streaks
-squads 1─* squad_shared_habits *─1 habit
+squads 1─* squad_shared_habits *─1 habits
 squads 1─* nudges
 profiles 1─* badges_earned, subscriptions, push_tokens
 ```
 
 ## Row-level security
 
-Helper (security definer): `habits.is_squadmate(other uuid)` and
-`habits.habit_shared_with_me(habit_id uuid)`: true if the habit is in
+Helper (security definer): `keepup_is_squadmate(other uuid)` and
+`keepup_habit_shared_with_me(habit_id uuid)`: true if the habit is in
 `squad_shared_habits` for a squad I'm a member of.
 
 | table | select | insert/update/delete |
 |---|---|---|
 | profiles | own row; squadmates can read **only** `display_name` via a view `squadmate_profiles` | own row |
-| habit | own; or `habit_shared_with_me(id)` (via view showing only id, name, icon, colour, schedule) | own |
+| habits | own; or `habit_shared_with_me(id)` (via view showing only id, name, icon, colour, schedule) | own |
 | checkins | own; or habit shared with me (view hides `note`) | own, date rule above |
 | streak_freezes | own; or habit shared with me | none (server) |
 | squads | members only | via RPC only |
