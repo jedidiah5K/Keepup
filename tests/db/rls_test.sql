@@ -107,3 +107,26 @@ select pg_temp.check((select name from keepup_habits where id = '10000000-0000-0
   and (select count(*) from keepup_checkins where habit_id = '10000000-0000-0000-0000-0000000000a1') = 2, 'import cannot touch someone else''s habit');
 reset role; set role anon;
 select pg_temp.fails($$select keepup_import('[]', '[]')$$, 'signed-out visitor cannot import');
+
+-- breaks: only from today on, at most 30 days, only ever ended early
+reset role; set role authenticated;
+select pg_temp.as_user('a');
+insert into keepup_breaks (id, start_date, end_date) values ('20000000-0000-0000-0000-0000000000b1', current_date, current_date + 6);
+select pg_temp.check((select count(*) from keepup_breaks) = 1, 'a break can start today');
+select pg_temp.fails(format($$insert into keepup_breaks (id, start_date, end_date) values (gen_random_uuid(), %L, %L)$$, current_date - 10, current_date), 'a break cannot start in the past');
+select pg_temp.fails(format($$insert into keepup_breaks (id, start_date, end_date) values (gen_random_uuid(), %L, %L)$$, current_date, current_date + 40), 'a break lasts at most 30 days');
+select pg_temp.fails(format($$update keepup_breaks set end_date = %L where id = '20000000-0000-0000-0000-0000000000b1'$$, current_date + 20), 'a break cannot be stretched');
+update keepup_breaks set end_date = current_date + 2 where id = '20000000-0000-0000-0000-0000000000b1';
+select pg_temp.check((select end_date from keepup_breaks where id = '20000000-0000-0000-0000-0000000000b1') = current_date + 2, 'a break can end early');
+select pg_temp.as_user('c');
+select pg_temp.check((select count(*) from keepup_breaks) = 0, 'others cannot see my breaks');
+
+-- delete account: everything goes, squads pass on
+select pg_temp.as_user('c');
+select keepup_delete_account();
+reset role;
+select pg_temp.check(not exists (select 1 from auth.users where id = '00000000-0000-0000-0000-00000000000c')
+  and not exists (select 1 from keepup_profiles where id = '00000000-0000-0000-0000-00000000000c'), 'delete account removes the login and profile');
+select pg_temp.check((select count(*) from keepup_squads where id = :'sq') = 1, 'a squad survives its owner deleting their account when others remain');
+set role anon;
+select pg_temp.fails($$select keepup_delete_account()$$, 'signed-out visitor cannot delete accounts');
