@@ -6,6 +6,8 @@
 // - Streak freeze: each habit gets 1 a week (3 with Pro). It's used automatically on a miss,
 //   only when there's a streak to save. A frozen day keeps the streak but doesn't add to it.
 //   Unused freezes don't carry over.
+// - Streak repair: a miss with no freeze left can be earned back by doing the next 2 scheduled
+//   days. The missed day is skipped, the 2 repair days count. At most one repair every 14 days.
 // - Longest streak never goes down.
 // - A break (holiday, sick days) pauses every streak: missed days inside it are skipped, and a
 //   week that touches a break can't break a weekly streak. Ticks on a break still count.
@@ -31,19 +33,27 @@ export function habitStreak(habit, counts, { today, weekStart = 1, freezesPerWee
 export const onBreak = (breaks = []) => d => breaks.some(b => d >= b.start_date && (!b.end_date || d <= b.end_date));
 
 function dailyStreak(habit, counts, today, weekStart, allowance, off) {
-  let run = 0, longest = 0;
-  const frozen = [], usedInWeek = {};
+  let run = 0, longest = 0, lastRepair = null, repair = null;
+  const frozen = [], repaired = [], usedInWeek = {};
   const start = habit.start && habit.start <= today ? habit.start : today;
-  for (const d of eachDay(start, today)) {
-    if (!isScheduled(habit, d)) continue;
+  const days = [...eachDay(start, today)].filter(d => isScheduled(habit, d));
+  for (let i = 0; i < days.length; i++) {
+    const d = days[i];
     if (isDone(habit, counts[d])) { run++; longest = Math.max(longest, run); continue; }
     if (off(d)) continue;   // on a break: a miss doesn't count
     if (d === today) break; // still time today
     const wk = weekOf(d, weekStart);
     if (run > 0 && (usedInWeek[wk] || 0) < allowance(wk)) { usedInWeek[wk] = (usedInWeek[wk] || 0) + 1; frozen.push(d); continue; }
+    // Repair: the next 2 scheduled days, both done, earn the streak back.
+    if (run > 0 && (!lastRepair || daysBetween(lastRepair, d) >= 14)) {
+      const [n1, n2] = days.slice(i + 1, i + 3), ok = x => x && isDone(habit, counts[x]);
+      if (ok(n1) && ok(n2)) { repaired.push(d); lastRepair = d; continue; }
+      const open = !n1 || n1 === today || (ok(n1) && (!n2 || n2 === today));
+      if (open) repair = { was: run, missed: d, done: ok(n1) ? 1 : 0 };
+    }
     run = 0;
   }
-  return { current: run, longest, unit: 'days', frozen, doneToday: isDone(habit, counts[today]) };
+  return { current: run, longest, unit: 'days', frozen, repaired, repair, doneToday: isDone(habit, counts[today]) };
 }
 
 function weeklyStreak(habit, counts, today, weekStart, allowance, off) {

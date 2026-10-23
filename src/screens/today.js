@@ -63,13 +63,15 @@ function habitRow(h, d, i) {
   // Lost a streak? Most people quit right here. Say something kind and keep their best on show.
   const comeback = !st.current && st.longest >= 3 && h.schedule_type !== 'x_per_week' && !c;
   // Evening, streak going, not done yet: say what's at stake.
+  // A streak broken in the last day or two can be won back: say exactly what it takes.
+  const rp = d === today() && st.repair, rpLine = rp && (rp.done && done ? `Tomorrow wins back ${rp.was} days` : rp.done || done ? `Today wins back ${rp.was} days` : `2 ticks win back ${rp.was} days`);
   const atRisk = !done && st.current >= 3 && d === today() && !currentBreak(d) && h.schedule_type !== 'x_per_week' && new Date().getHours() >= 18;
   const pct = n => Math.round(Math.min(1, n / h.target_count) * 100), pc = h.kind === 'count' ? pct(c) : 0, pp = just && view.justFrom != null ? pct(view.justFrom) : pc;
   const label = `${h.name}: ${done ? 'done' : h.kind === 'count' ? `${c} of ${h.target_count}, tap to add one` : 'not done, tap to tick'}`;
   return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}" data-hint="${h.kind === 'count' ? 'Tap to add one' : 'Tap to tick it off'}">
     <button class="h-main" data-a="habitMenu" data-id="${h.id}" aria-label="${esc(h.name)} options">
       <span class="h-ic" aria-hidden="true">${esc(h.icon)}</span>
-      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk ? 'risk' : ''}">${comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
+      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk || rp ? 'risk' : ''}">${rp ? rpLine : comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
     </button>
     <span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>
     <button class="tick ${h.kind === 'count' ? 'count' : ''}" data-a="tick" data-id="${h.id}" data-d="${d}" aria-label="${esc(label)}" aria-pressed="${done}" ${lock ? 'disabled' : ''} style="--pc:${pc};--pp:${pp}">
@@ -193,6 +195,7 @@ export function tick(btn, rerender) {
   const c = countFor(id, d), wasDone = c >= h.target_count;
   const next = h.kind === 'count' ? (wasDone ? 0 : c + 1) : (wasDone ? 0 : 1);
   const hsBefore = activeHabits().filter(x => dueOn(x, d) && x.schedule_type !== 'x_per_week'), allBefore = hsBefore.every(x => countFor(x.id, d) >= x.target_count);
+  const before = streakOf(h, d);
   if (!setCount(id, d, next)) return;
   const nowDone = next >= h.target_count;
   if (nowDone && !wasDone) {
@@ -201,7 +204,8 @@ export function tick(btn, rerender) {
     const doneN = activeHabits().filter(x => dueOn(x, d) && countFor(x.id, d) >= x.target_count).length;
     SOUNDS.step(doneN - 1);
     const st = streakOf(h, d), hit = d === today() && h.schedule_type !== 'x_per_week' && MILESTONES.includes(st.current);
-    if (hit) setTimeout(() => celebrate(st.current, `${h.icon} ${h.name}`, COLOURS[h.colour]), 450);
+    if (before.repair && st.repaired.length > before.repaired.length) setTimeout(() => celebrate(st.current, `${h.icon} ${h.name}`, COLOURS[h.colour], 'Streak repaired. Welcome back.'), 450);
+    else if (hit) setTimeout(() => celebrate(st.current, `${h.icon} ${h.name}`, COLOURS[h.colour]), 450);
     else if (all && !allBefore) setTimeout(() => { SOUNDS.summit(); confetti(36); buzz(30); }, 650);
   } else if (next > c) { SOUNDS.plus(); buzz(8); }
   else { SOUNDS.undo(); buzz(8); toast(`Unticked ${esc(h.name)} · <button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="${c}">Undo</button>`); }

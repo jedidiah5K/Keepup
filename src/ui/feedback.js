@@ -123,12 +123,12 @@ export function burst(el, colour) {
 export const MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 250, 300, 365, 500, 1000];
 const LINES = { 3: 'Three in a row. It’s starting.', 7: 'A full week. That’s a habit forming.', 14: 'Two weeks strong.', 21: 'Three weeks. This is who you are now.',
   30: 'A whole month. Most people never get here.', 50: 'Fifty. Quietly impressive.', 75: 'Seventy-five days.', 100: 'One hundred days. Legendary.', 365: 'A full year. Unreal.' };
-export function celebrate(n, habit, colour) {
+export function celebrate(n, habit, colour, line) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const el = document.createElement('div'); el.className = 'milestone'; el.setAttribute('role', 'status');
   el.style.setProperty('--mc', colour || 'var(--accent)');
   el.innerHTML = `<div class="ms-card"><span class="ms-ring" aria-hidden="true"></span><span class="ms-n">${n}</span><span class="ms-unit">day streak</span>
-    <span class="ms-habit">${habit.replace(/[&<>"]/g, '')}</span><span class="ms-line">${LINES[n] || 'Keep going.'}</span></div>`;
+    <span class="ms-habit">${habit.replace(/[&<>"]/g, '')}</span><span class="ms-line">${line || LINES[n] || 'Keep going.'}</span></div>`;
   document.body.appendChild(el);
   SOUNDS.milestone(); buzz(40); setTimeout(() => confetti(48), 350);
   const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); };

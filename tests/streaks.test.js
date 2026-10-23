@@ -34,8 +34,8 @@ describe('daily habits', () => {
     expect(r.doneToday).toBe(false);
   });
   it('breaks on a missed day without a freeze, keeps longest', () => {
-    const c = counts(days(MON, 3), days(addDays(MON, 4), 2)); // miss Thursday
-    const r = habitStreak(daily, c, { today: addDays(MON, 5), freezesPerWeek: 0 });
+    const c = counts(days(MON, 3), days(addDays(MON, 5), 2)); // miss Thursday and Friday
+    const r = habitStreak(daily, c, { today: addDays(MON, 6), freezesPerWeek: 0 });
     expect(r).toMatchObject({ current: 2, longest: 3 });
   });
   it('uses the free weekly freeze on one missed day', () => {
@@ -187,5 +187,45 @@ describe('breaks', () => {
   });
   it('completion leaves missed break days out', () => {
     expect(completion(daily, counts(days(MON, 2)), MON, addDays(MON, 3), [{ start_date: addDays(MON, 2), end_date: null }])).toBe(1);
+  });
+});
+
+describe('streak repair', () => {
+  const opts = (today, more = {}) => ({ today, freezesPerWeek: 0, ...more });
+  it('2 done days right after a miss earn the streak back', () => {
+    // done Mon–Fri, miss Sat, done Sun + next Mon
+    const c = counts(days(MON, 5), addDays(MON, 6), addDays(MON, 7));
+    const r = habitStreak(daily, c, opts(addDays(MON, 7)));
+    expect(r.current).toBe(7);
+    expect(r.repaired).toEqual([addDays(MON, 5)]);
+  });
+  it('shows an open repair while it can still happen', () => {
+    const c = counts(days(MON, 5), addDays(MON, 6)); // miss Sat, done Sun, today Mon not done yet
+    const r = habitStreak(daily, c, opts(addDays(MON, 7)));
+    expect(r.current).toBe(1);
+    expect(r.repair).toEqual({ was: 5, missed: addDays(MON, 5), done: 1 });
+  });
+  it('the day after a miss, the repair is open with nothing done', () => {
+    const r = habitStreak(daily, counts(days(MON, 5)), opts(addDays(MON, 6)));
+    expect(r.repair).toMatchObject({ was: 5, done: 0 });
+  });
+  it('missing a repair day ends it', () => {
+    const c = counts(days(MON, 5)); // miss Sat and Sun, today Mon
+    const r = habitStreak(daily, c, opts(addDays(MON, 7)));
+    expect(r.current).toBe(0);
+    expect(r.repair).toBeNull();
+  });
+  it('only one repair every 14 days', () => {
+    // miss day 5 (repaired by 6, 7), then miss day 10, done 11 + 12: too soon, so it resets
+    const c = counts(days(MON, 5), addDays(MON, 6), addDays(MON, 7), addDays(MON, 8), addDays(MON, 9), addDays(MON, 11), addDays(MON, 12));
+    const r = habitStreak(daily, c, opts(addDays(MON, 12)));
+    expect(r.current).toBe(2);
+    expect(r.longest).toBe(9);
+  });
+  it('a freeze is used before a repair', () => {
+    const c = counts(days(MON, 5), addDays(MON, 6));
+    const r = habitStreak(daily, c, { today: addDays(MON, 6), freezesPerWeek: 1 });
+    expect(r.current).toBe(6);
+    expect(r.frozen).toEqual([addDays(MON, 5)]);
   });
 });
