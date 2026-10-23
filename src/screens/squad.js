@@ -33,7 +33,7 @@ export function render() {
   if (!cloud.user) return pitch(`<button class="btn wide mt3" data-a="auth" data-mode="up">Make a free account to start</button>
       <p class="muted small mt2 center">Already have one? <button class="link" data-a="auth" data-mode="in">Sign in</button></p>`);
   const SQ = mod?.SQ;
-  if (!SQ || !SQ.loaded) return `<header class="top"><div><div class="eyebrow">Squad</div><h1>Your <em>squad</em></h1></div></header><div class="sq-loading" aria-label="Loading"><i></i><i></i><i></i></div>`;
+  if (!SQ || !SQ.loaded) return `<header class="top"><div><div class="eyebrow">Squad</div><h1>Your <em>squad</em></h1></div></header><div class="sq-loading" role="status" aria-label="Loading"><i></i><i></i><i></i></div>`;
   if (SQ.error && !SQ.squad) return pitch(`<p class="note">${esc(SQ.error)}</p><button class="btn wide mt3" data-a="sqReload">Try again</button>`);
   if (!SQ.squad) return pitch(`<div class="stack mt3"><button class="btn wide" data-a="sqCreate">Create a squad</button><button class="btn ghost wide" data-a="sqJoin">I have an invite link</button></div>`);
   return board(SQ);
