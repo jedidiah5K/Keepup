@@ -143,8 +143,18 @@ const ACTIONS = {
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };
 
+// Press and hold a habit's circle to open its sheet (exact count, streak, share) instead of ticking.
+let holdT = null, held = false;
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest('.tick[data-a="tick"]'); held = false; if (!t || t.disabled) return;
+  holdT = setTimeout(() => { held = true; buzz(20); habitMenu(t.dataset.id); }, 480);
+});
+['pointerup', 'pointercancel', 'pointerleave', 'scroll'].forEach(ev => document.addEventListener(ev, () => clearTimeout(holdT), { capture: true, passive: true }));
+document.addEventListener('contextmenu', e => { if (e.target.closest('.tick')) e.preventDefault(); });
+
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
+  if (held && el.dataset.a === 'tick') { held = false; return; }
   const a = el.dataset.a;
   if (a.startsWith('ob') && ACTIONS[a] === undefined) { if (Intro.handle(a, el)) swap(render); return; }
   if (ACTIONS[a]) return ACTIONS[a](el);

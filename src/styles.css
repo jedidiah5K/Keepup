@@ -643,3 +643,4 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 @media (prefers-reduced-motion: reduce) { .dm-card.on .dm-tick, .dm-card.on .dm-tick path, .dm-flip i, .dm-card.on .dm-faces i { animation: none !important; } }
 .welcome { grid-template-columns: minmax(0, 1fr); }
 .welcome .ob-body, .cards { min-width: 0; }
+.tick { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }

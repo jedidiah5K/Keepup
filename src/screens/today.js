@@ -98,7 +98,7 @@ export function render() {
         ${!isToday ? `<button class="chip glass" data-a="pickDay" data-d="${t}">Today</button>` : ''}</div>
       <div class="hero-txt">
         <h1 class="display on-sky">${isToday ? `${greet()}${name ? `, <em>${esc(name)}</em>` : ''}` : esc(fmtDay(d))}</h1>
-        ${daily.length ? `<p class="hero-n on-sky"><b data-count="${doneN}">${doneN}</b><span>/${daily.length}</span> ${doneAll ? '<em>summit reached</em>' : 'done'}</p>` : ''}
+        ${daily.length ? `<p class="hero-n on-sky"><b data-count="${doneN}">${doneN}</b><span>/${daily.length}</span> ${doneAll ? '<em>summit reached</em>' : isToday && currentBreak() ? 'done · <em>on a break</em>' : 'done'}</p>` : ''}
       </div>
     </section>
     <div class="sheet-top">

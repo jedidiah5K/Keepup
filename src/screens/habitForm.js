@@ -34,7 +34,7 @@ export function openHabitForm(id, onDone) {
       ${[['daily', 'Every day'], ['weekdays', 'Some days'], ['x_per_week', 'X a week']].map(([k, l]) => `<button type="button" role="radio" aria-checked="${f.schedule_type === k}" class="${f.schedule_type === k ? 'on' : ''}" data-x="sched" data-v="${k}">${l}</button>`).join('')}</div>
       ${f.schedule_type === 'weekdays' ? `<div class="days mt2">${DAYS.map(([n, l]) => `<button type="button" class="dchip ${f.schedule_days.includes(n) ? 'on' : ''}" aria-pressed="${f.schedule_days.includes(n)}" data-x="day" data-v="${n}">${l}</button>`).join('')}</div>` : ''}
       ${f.schedule_type === 'x_per_week' ? `<div class="stepper mt2" role="group" aria-label="Times a week"><button type="button" data-x="tpw" data-v="-1" aria-label="Fewer">−</button><b>${f.times_per_week}×</b> a week, any days<button type="button" data-x="tpw" data-v="1" aria-label="More">+</button></div>` : ''}</div>
-    <label class="fld"><span>Reminder (optional)</span><input name="reminder_time" type="time" value="${esc(f.reminder_time || '')}"></label>
+    <label class="fld"><span>Reminder time (optional)</span><input name="reminder_time" type="time" value="${esc(f.reminder_time || '')}"><small class="muted small">Reminders start when the phone app arrives. Set it now and it’ll just work.</small></label>
     <button class="btn wide mt3" type="submit">${id ? 'Save' : 'Add habit'}</button>
     ${id ? `<div class="row gap mt2"><button type="button" class="btn ghost grow" data-x="archive">Archive</button><button type="button" class="btn ghost danger-t grow" data-x="delete">Delete</button></div>
       <p class="muted small mt2">Archiving hides it from Today and keeps all its history. Nothing is ever archived for you.</p>` : ''}
