@@ -32,7 +32,9 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; height: 100%; overflow: hidden; }
+/* Only the screen scrolls, never the page itself, so iPhone can't slide the top under the status bar. */
+body { position: fixed; inset: 0; overflow: hidden; }
 body {
   margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.45 var(--sans);
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none;
@@ -230,6 +232,7 @@ h2.display { font-size: 2rem; }
 .tick.count::before { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 2.4px var(--line); }
 .habit:not(.done).just .cring circle { animation: ring .5s var(--out); }
 @keyframes ring { from { stroke-dasharray: var(--pp, 0) 100; } }
+.tick > .tick-check, .tick > .tick-n { grid-area: 1 / 1; }
 .tick-n { position: relative; font: 600 .95rem/1 var(--mono); }
 
 .wsum { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .9rem; padding: .9rem 0; text-align: left; }
