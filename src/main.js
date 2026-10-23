@@ -14,7 +14,7 @@ import * as Squad from './screens/squad.js';
 import * as Me from './screens/me.js';
 import * as Intro from './screens/intro.js';
 import { openHabitForm } from './screens/habitForm.js';
-import { setCount, habitById } from './lib/store.js';
+import { setCount, habitById, countFor, editable, today } from './lib/store.js';
 import { syncLine, loadCloud, cloud } from './lib/session.js';
 import { install, hideNudge } from './ui/install.js';
 import { SOUNDS, buzz } from './ui/feedback.js';
@@ -82,15 +82,32 @@ function parallax(scr) {
   }, { passive: true });
 }
 
+// Tap a habit's name: its streak at a glance, an exact count for count habits, and the usual actions.
 function habitMenu(id) {
   const h = habitById(id); if (!h) return;
-  const sh = openSheet(`<h2 class="sheet-h"><span aria-hidden="true">${esc(h.icon)}</span> ${esc(h.name)}</h2>
-    <div class="stack"><button class="btn ghost wide" data-m="edit">Edit habit</button><button class="btn ghost wide" data-m="stats">See stats</button></div>`, {
-    label: h.name,
+  const t = today(), d = Today.view.day && Today.view.day <= t ? Today.view.day : t, lock = !editable(d);
+  const body = () => {
+    const st = Today.streakOf(h), c = countFor(id, d), wk = st.unit === 'weeks';
+    return `<h2 class="sheet-h"><span aria-hidden="true">${esc(h.icon)}</span> ${esc(h.name)}</h2>
+    <div class="hm-stats"><div><b>${st.current}</b><span class="muted small">${wk ? 'week' : 'day'} streak</span></div><div><b>${st.longest}</b><span class="muted small">best</span></div><div><b>${Object.values(state.checkins[id] || {}).filter(n => n >= h.target_count).length}</b><span class="muted small">all time</span></div></div>
+    ${h.kind === 'count' && !lock ? `<div class="fld"><span>${d === t ? 'Today' : 'That day'}</span><div class="stepper" role="group" aria-label="Count"><button type="button" data-m="minus" aria-label="One less" ${c ? '' : 'disabled'}>−</button><b aria-live="polite">${c}</b> of ${h.target_count}<button type="button" data-m="plus" aria-label="One more">+</button></div></div>` : ''}
+    <div class="stack"><button class="btn wide" data-m="share">${I.share} Share streak</button>
+      <div class="row gap"><button class="btn ghost grow" data-m="edit">Edit</button><button class="btn ghost grow" data-m="stats">Stats</button></div></div>`;
+  };
+  let changed = false;
+  const sh = openSheet(body(), {
+    label: h.name, onClose: () => { if (changed) render(); },
     mount: b => b.onclick = e => {
-      const m = e.target.closest('[data-m]')?.dataset.m; if (!m) return; closeSheet(sh);
+      const btn = e.target.closest('[data-m]'), m = btn?.dataset.m; if (!m) return;
+      if (m === 'plus' || m === 'minus') {
+        const c = countFor(id, d), next = Math.max(0, c + (m === 'plus' ? 1 : -1));
+        if (setCount(id, d, next)) { changed = true; buzz(8); m === 'plus' ? SOUNDS.plus() : SOUNDS.undo(); if (next === h.target_count && c < next) SOUNDS.step(3); b.innerHTML = body(); b.querySelector(`[data-m="${m}"]`)?.focus(); }
+        return;
+      }
+      closeSheet(sh);
       if (m === 'edit') openHabitForm(id, render);
       if (m === 'stats') { NAV.tab = 'stats'; Stats.view.habit = id; render(); }
+      if (m === 'share') ACTIONS.shareStreak(document.createElement('button'), id);
     },
   });
 }
@@ -102,8 +119,8 @@ const ACTIONS = {
   undoTick: el => { setCount(el.dataset.id, el.dataset.d, +el.dataset.c); document.querySelector('.toast')?.remove(); render(); },
   newHabit: () => openHabitForm(null, render),
   editHabit: el => openHabitForm(el.dataset.id, render),
-  shareStreak: async el => {
-    const h = habitById(el.dataset.id); if (!h) return;
+  shareStreak: async (el, id = el.dataset.id) => {
+    const h = habitById(id); if (!h) return;
     el.disabled = true; el.classList.add('busy');
     try {
       const [{ shareStreak }, { streakOf }] = await Promise.all([import('./ui/share.js'), import('./screens/today.js')]);

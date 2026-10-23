@@ -572,3 +572,9 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .recap-nums span { font-size: .85rem; line-height: 1.35; padding-bottom: .2rem; }
 .recap .muted { color: color-mix(in oklab, var(--bg) 70%, transparent); margin: 0; }
 .recap.bye { opacity: 0; transform: scale(.96) translateY(6px); }
+
+/* Habit sheet: streak numbers at the top */
+.hm-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: .2rem 0 1.4rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.hm-stats > div { display: grid; gap: .25rem; padding: .9rem 0; }
+.hm-stats b { font: 400 2.2rem/1 var(--serif); }
+.stepper button:disabled { opacity: .35; }

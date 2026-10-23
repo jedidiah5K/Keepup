@@ -64,6 +64,7 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   await page.evaluate(seed, scheme === 'dark' ? 'midnight' : 'paper'); await page.evaluate(fakeSession); await page.reload();
   await shot('03-today');
   await page.click('.habit[data-id="s"] .tick'); await page.click('.habit[data-id="p"] .tick'); await shot('04-today-ticked');
+  await page.click('.habit[data-id="w"] .h-main'); await page.click('[data-m="plus"]'); await shot('04b-habit-sheet'); await page.keyboard.press('Escape');
   for (let i = 0; i < 5; i++) await page.click('.habit[data-id="w"] .tick');
   await page.click('.habit[data-id="g"] .tick'); await page.evaluate(() => { document.getElementById('screen').scrollTop = 0; }); await page.waitForTimeout(900); await shot('05-today-alldone');
   await page.click('[data-a="newHabit"].fab'); await shot('06-new-habit');
