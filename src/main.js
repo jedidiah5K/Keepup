@@ -15,6 +15,9 @@ import * as Me from './screens/me.js';
 import * as Intro from './screens/intro.js';
 import { openHabitForm } from './screens/habitForm.js';
 import { setCount, habitById } from './lib/store.js';
+import { syncLine, loadCloud } from './lib/session.js';
+import { install, hideNudge } from './ui/install.js';
+const account = () => import('./screens/account.js');
 
 load();
 applyTheme(state.profile.theme);
@@ -92,12 +95,17 @@ const ACTIONS = {
   openStats: el => swap(() => { Stats.view.habit = el.dataset.id; render.last = null; render(); document.getElementById('screen').scrollTop = 0; }),
   statsBack: () => swap(() => { Stats.view.habit = null; render.last = null; render(); }),
   closeSheet: () => closeSheet(),
+  auth: async el => (await account()).openAuth(el.dataset.mode),
+  signOut: async () => (await account()).confirmSignOut(),
+  syncNow: async () => (await loadCloud()).sync(),
+  install: () => install(),
+  hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
   const a = el.dataset.a;
-  if (a.startsWith('ob')) { const go = Intro.handle(a, el); go ? swap(render) : render(); return; }
+  if (a.startsWith('ob') && ACTIONS[a] === undefined) { const go = Intro.handle(a, el); go ? swap(render) : render(); return; }
   if (ACTIONS[a]) return ACTIONS[a](el);
   if (['theme', 'manage', 'export'].includes(a)) Me.handle(a, el, render);
 });
@@ -113,5 +121,20 @@ setInterval(() => { const d = Today.view.day ?? null; const t = new Date().toDat
 document.addEventListener('pointerover', e => { const b = e.target.closest('button[aria-label]:not([title])'); if (b && !b.textContent.trim()) b.title = b.getAttribute('aria-label'); });
 
 render();
+// Accounts and sync load just after the first screen is up, so opening the app stays instant.
+const idle = window.requestIdleCallback || (f => setTimeout(f, 200));
+idle(() => loadCloud().then(m => {
+  m.start();
+  // Coming back from a reset-password email: ask for the new password.
+  m.sb.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') account().then(a => a.openAuth('newpw')); });
+}));
+// Data came down from the account: redraw, unless the person is mid-typing or in a sheet.
+addEventListener('keepup:cloud', () => {
+  applyTheme(state.profile.theme);
+  const a = document.activeElement;
+  if (document.querySelector('.sheet-wrap') || (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName))) { const l = document.querySelector('.sync-line'); if (l) l.textContent = syncLine(); return; }
+  render();
+});
+addEventListener('keepup:installable', () => render());
 if ('serviceWorker' in navigator && import.meta.env.PROD) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 window.KeepUp = { state, render, toast };

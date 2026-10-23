@@ -7,6 +7,7 @@ import { I } from '../ui/icons.js';
 import { esc, toast } from '../ui/sheets.js';
 import { buzz, SOUNDS, burst, confetti } from '../ui/feedback.js';
 import { scene, mountScene } from '../ui/scene.js';
+import { canInstall, nudgeHidden, isIOS } from '../ui/install.js';
 
 export const view = { day: null, just: null }; // day null = today; just = habit id ticked a moment ago
 
@@ -104,9 +105,18 @@ export function render() {
         : !list.length ? `<div class="empty"><p class="muted">Nothing scheduled for this day. Enjoy the rest.</p></div>`
         : `<ul class="habits" aria-label="Habits for ${fmtDay(d)}">${list.map((h, i) => habitRow(h, d, i)).join('')}</ul>`}
       ${isToday ? weekSummary() : ''}
+      ${isToday && hs.length && canInstall() && !nudgeHidden() ? installCard() : ''}
     </div>
 `;
 }
+
+// While in beta, KeepUp is installed from the browser. A quiet card, not a pop-up.
+const installCard = () => `<aside class="install-card">
+    <img src="/icons/icon-192.png" alt="" width="44" height="44">
+    <div class="grow"><b>Keep it one tap away</b><span class="muted small">${isIOS() ? 'Add KeepUp to your home screen. Opens full screen, works offline.' : 'Install KeepUp. Opens like an app, works offline.'}</span></div>
+    <button class="btn sm" data-a="install">Add</button>
+    <button class="x" data-a="hideInstall" aria-label="Not now">×</button>
+  </aside>`;
 
 export function afterRender(root) { mountScene(root); view.just = null; }
 

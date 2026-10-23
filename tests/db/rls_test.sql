@@ -87,3 +87,23 @@ select pg_temp.check((select owner_id from keepup_squads where id = :'sq') = '00
 reset role; set role anon;
 select pg_temp.check((select count(*) from keepup_habits) = 0 and (select count(*) from keepup_squads) = 0, 'signed-out visitor reads nothing');
 select pg_temp.fails($$select keepup_create_squad('x')$$, 'signed-out visitor cannot make squads');
+
+-- import: first sign-in uploads a phone's older history, only for yourself
+reset role; set role authenticated;
+select pg_temp.as_user('a');
+select pg_temp.check(keepup_import(
+  '[{"id":"10000000-0000-0000-0000-0000000000a1","name":"Old habit","schedule_type":"daily","updated_at":"2026-01-01T00:00:00Z"}]',
+  format('[{"habit_id":"10000000-0000-0000-0000-0000000000a1","date":"%s","count":1},{"habit_id":"10000000-0000-0000-0000-0000000000a1","date":"%s","count":1}]', current_date - 60, current_date)::jsonb
+) = 2, 'import adds old and new days');
+select pg_temp.check((select count(*) from keepup_checkins where habit_id = '10000000-0000-0000-0000-0000000000a1') = 2, 'imported days are saved');
+select keepup_import('[]', format('[{"habit_id":"10000000-0000-0000-0000-0000000000a1","date":"%s","count":5}]', current_date - 60)::jsonb);
+select pg_temp.check((select count from keepup_checkins where habit_id = '10000000-0000-0000-0000-0000000000a1' and date = current_date - 60) = 1, 'import never changes an old day already saved');
+select pg_temp.fails(format($$insert into keepup_checkins (habit_id, date) values ('10000000-0000-0000-0000-0000000000a1', %L)$$, current_date - 30), 'normal writes still limited to the last 7 days');
+select pg_temp.as_user('c');
+select keepup_import('[{"id":"10000000-0000-0000-0000-0000000000a1","name":"Hijack","updated_at":"2030-01-01T00:00:00Z"}]',
+  format('[{"habit_id":"10000000-0000-0000-0000-0000000000a1","date":"%s","count":1}]', current_date - 20)::jsonb);
+select pg_temp.as_user('a');
+select pg_temp.check((select name from keepup_habits where id = '10000000-0000-0000-0000-0000000000a1') = 'Old habit'
+  and (select count(*) from keepup_checkins where habit_id = '10000000-0000-0000-0000-0000000000a1') = 2, 'import cannot touch someone else''s habit');
+reset role; set role anon;
+select pg_temp.fails($$select keepup_import('[]', '[]')$$, 'signed-out visitor cannot import');

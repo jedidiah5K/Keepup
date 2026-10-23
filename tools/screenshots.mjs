@@ -37,7 +37,10 @@ const browser = await chromium.launch({ executablePath: exe });
 const sizes = [['390', { width: 390, height: 844 }], ['360', { width: 360, height: 800 }]];
 for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   if (tag === '360' && scheme === 'dark') continue;
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, colorScheme: scheme, isMobile: true, hasTouch: true });
+  // 390 pretends to be an iPhone, 360 an Android phone, so both install guides get a picture.
+  const userAgent = tag === '390' ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
+    : 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, colorScheme: scheme, isMobile: true, hasTouch: true, userAgent });
   const page = await ctx.newPage();
   const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => m.type() === 'error' && errors.push(m.text()));
   const shot = async name => { await page.waitForTimeout(1500); await page.screenshot({ path: `shots/${name}-${scheme}-${tag}.png` }); };
@@ -60,6 +63,16 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   await page.click('[data-tab="squad"]'); await shot('11-squad');
   await page.click('[data-tab="me"]'); await shot('12-me');
   await page.click('[data-a="manage"]'); await shot('13-manage');
+  await page.keyboard.press('Escape');
+  await page.click('[data-a="auth"][data-mode="up"]'); await shot('14-account');
+  await page.fill('input[name=email]', 'nobody@example.com'); await page.fill('input[name=pw]', 'wrong-password-1');
+  await page.click('[data-to="in"]').catch(() => {});
+  await page.fill('input[name=email]', 'nobody@example.com'); await page.fill('input[name=pw]', 'wrong-password-1');
+  await page.click('.auth button[type=submit]'); await page.waitForTimeout(2500); await shot('15-signin-wrong');
+  await page.keyboard.press('Escape');
+  await page.click('[data-a="install"]'); await shot('16-install-guide');
+  await page.keyboard.press('Escape');
+  await page.click('[data-tab="today"]'); await page.evaluate(() => { document.getElementById('screen').scrollTop = 9999; }); await shot('17-today-install-card');
   if (errors.length) console.log(scheme, tag, 'ERRORS:', errors);
   await ctx.close();
 }

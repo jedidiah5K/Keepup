@@ -15,7 +15,8 @@ export function render() {
   let inner = '';
   if (s === 'you') inner = `<h1>Habits that stick, <em>with friends.</em></h1>
     <p class="muted">Unlimited habits, free forever. No paywall on the basics. Ever.</p>
-    <label class="fld mt3"><span>What should we call you?</span><input data-ob="name" maxlength="40" value="${esc(state.profile.display_name)}" placeholder="First name" autocomplete="given-name"></label>`;
+    <label class="fld mt3"><span>What should we call you?</span><input data-ob="name" maxlength="40" value="${esc(state.profile.display_name)}" placeholder="First name" autocomplete="given-name"></label>
+    <p class="ob-signin muted small">Used KeepUp before? <button class="link" data-a="auth" data-mode="in">Sign in</button></p>`;
   if (s === 'habits') inner = `<h1>Pick a few <em>to start.</em></h1><p class="muted">Change or add more any time.</p>
     <div class="ob-picks">${STARTERS.map((h, i) => `<button class="ob-pick ${OB.picks.has(i) ? 'on' : ''}" aria-pressed="${OB.picks.has(i)}" data-a="obPick" data-i="${i}"><span aria-hidden="true">${h.icon}</span>${esc(h.name)}</button>`).join('')}</div>`;
   if (s === 'look') inner = `<h1>Pick <em>your look.</em></h1><p class="muted">Change it later in Me.</p>

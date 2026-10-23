@@ -13,6 +13,7 @@ export const state = {
   checkins: {},        // { habitId: { 'YYYY-MM-DD': count } }
   pending: [],         // [{ op: 'upsert'|'delete', table, row }]
   squad: null,         // filled from the server
+  syncedUser: null,    // account this phone last uploaded everything to
 };
 
 export function load() {
@@ -23,10 +24,11 @@ export function load() {
   state.profile.timezone = tz(); // follow the phone when travelling
 }
 let saveT = null;
-export function save() {
+// quiet: saved by the sync itself, so don't trigger another sync.
+export function save(quiet = false) {
   clearTimeout(saveT);
-  saveT = setTimeout(() => { try { localStorage.setItem(LS, JSON.stringify({ profile: state.profile, habits: state.habits, checkins: state.checkins, pending: state.pending })); } catch (e) {} }, 60);
-  window.dispatchEvent(new Event('keepup:changed'));
+  saveT = setTimeout(() => { try { localStorage.setItem(LS, JSON.stringify({ profile: state.profile, habits: state.habits, checkins: state.checkins, pending: state.pending, syncedUser: state.syncedUser })); } catch (e) {} }, 60);
+  if (!quiet) window.dispatchEvent(new Event('keepup:changed'));
 }
 
 export const today = () => localDate(state.profile.timezone);

@@ -3,6 +3,8 @@ import { state, setProfile, activeHabits, archivedHabits, archiveHabit, deleteHa
 import { THEMES, applyTheme } from '../lib/theme.js';
 import { I } from '../ui/icons.js';
 import { esc, openSheet, closeSheet, confirmSheet, toast } from '../ui/sheets.js';
+import { cloud, syncLine } from '../lib/session.js';
+import { canInstall, installed } from '../ui/install.js';
 
 const toggle = (key, label, sub = '') => `<label class="row-set"><span><span>${label}</span>${sub ? `<span class="muted small">${sub}</span>` : ''}</span>
   <input type="checkbox" role="switch" class="switch" data-a="pref" data-k="${key}" ${state.profile[key] !== false ? 'checked' : ''}></label>`;
@@ -10,6 +12,13 @@ const toggle = (key, label, sub = '') => `<label class="row-set"><span><span>${l
 export function render() {
   const p = state.profile;
   return `<header class="top"><div><div class="eyebrow">Me</div><h1>${p.display_name ? `<em>${esc(p.display_name)}</em>` : 'You'}</h1></div></header>
+    <section class="group"><div class="g-h">Account</div>
+      ${cloud.user ? `<div class="row-set"><span><span>${esc(cloud.user.email)}</span><span class="muted small sync-line ${cloud.error ? 'warn' : ''}">${syncLine()}</span></span><button class="chip" data-a="syncNow">Sync</button></div>
+        <button class="row-set" data-a="signOut"><span>Sign out</span>${I.right}</button>`
+      : `<button class="row-set acct-cta" data-a="auth" data-mode="up"><span><span>Back up your habits</span><span class="muted small">Free account. Keeps streaks safe if you lose your phone, and you’ll need it for squads.</span></span>${I.right}</button>
+        <button class="row-set" data-a="auth" data-mode="in"><span>Sign in</span>${I.right}</button>`}
+      ${canInstall() ? `<button class="row-set" data-a="install"><span><span>Add to home screen</span><span class="muted small">Opens full screen like a normal app</span></span>${I.right}</button>` : installed() ? '' : ''}
+    </section>
     <section class="group"><div class="g-h">You</div>
       <label class="row-set"><span>Name</span><input class="in-right" data-a="name" maxlength="40" value="${esc(p.display_name)}" placeholder="Your name" autocomplete="given-name"></label>
     </section>
