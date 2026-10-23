@@ -15,7 +15,7 @@ const MODES = {
 
 export function openAuth(mode = 'up') {
   const body = m => `<h2 class="sheet-h serif-h">${MODES[m].h}</h2>
-    ${m === 'up' ? '<p class="muted small">Backs up your habits and keeps them in step on every device. You need one for squads.</p>' : ''}
+    ${m === 'up' ? '<p class="muted small">Free. Your streaks are saved to your account, so a new phone never means starting over.</p>' : ''}
     ${m === 'reset' ? '<p class="muted small">We’ll email you a link to set a new one.</p>' : ''}
     <form class="auth" data-mode="${m}" novalidate>
       ${m !== 'newpw' ? `<label class="fld"><span>Email</span><input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254" autofocus></label>` : ''}
