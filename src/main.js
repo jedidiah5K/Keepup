@@ -49,7 +49,7 @@ function render() {
   const scr = document.getElementById('screen');
   if (same) scr.scrollTop = y; else scr.classList.add('enter');
   render.last = NAV.tab; render.lastTi = ti;
-  SCREENS[NAV.tab].afterRender?.(scr);
+  SCREENS[NAV.tab].afterRender?.(scr, render);
   if (!same) countUp(scr);
   parallax(scr);
 }

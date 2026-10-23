@@ -24,11 +24,12 @@ function dayProgress(d) {
   return hs.filter(h => countFor(h.id, d) >= h.target_count).length / hs.length;
 }
 
-let lastSel = null;
+let lastSel = null, slide = '';
 function weekStrip(sel) {
   const t = today(), w0 = weekOf(sel, state.profile.week_start), idx = (isoWeekday(sel) - state.profile.week_start + 7) % 7;
   const from = lastSel ?? idx; lastSel = idx;
-  return `<div class="week" role="tablist" aria-label="This week" style="--sel:${idx};--from:${from}"><span class="week-ind" aria-hidden="true"></span>${[...Array(7)].map((_, i) => {
+  const cls = slide; slide = '';
+  return `<div class="week ${cls}" role="tablist" aria-label="This week" style="--sel:${idx};--from:${from}"><span class="week-ind" aria-hidden="true"></span>${[...Array(7)].map((_, i) => {
     const d = addDays(w0, i), p = dayProgress(d), fut = d > t;
     const ring = p == null || fut ? '' : `<svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="16"/>${p ? `<circle class="ring-fg" cx="18" cy="18" r="16" pathLength="100" stroke-dasharray="${Math.round(p * 100)} 100"/>` : ''}</svg>`;
     return `<button class="day ${d === sel ? 'sel' : ''} ${d === t ? 'now' : ''} ${p === 1 ? 'full' : ''}" role="tab" aria-selected="${d === sel}" ${fut ? 'disabled' : ''}
@@ -162,7 +163,21 @@ const installCard = () => `<aside class="install-card">
     <button class="x" data-a="hideInstall" aria-label="Not now">×</button>
   </aside>`;
 
-export function afterRender(root) { mountScene(root); view.just = null; }
+export function afterRender(root, rerender) {
+  mountScene(root); view.just = null;
+  // Swipe the week strip to go back a week (or forward again, never past today).
+  const wk = root.querySelector('.week'); if (!wk || !rerender) return;
+  let x0 = null, y0 = 0;
+  wk.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  wk.addEventListener('touchend', e => {
+    if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    const t = today(), cur = view.day && view.day <= t ? view.day : t;
+    let d = addDays(cur, dx > 0 ? -7 : 7); if (d > t) d = t;
+    if (d === cur) return;
+    view.day = d; lastSel = null; slide = dx > 0 ? 'from-left' : 'from-right'; SOUNDS.tap(); buzz(6); rerender();
+  });
+}
 
 // Tap: yes/no flips, count adds one (and wraps back to 0 after the target, so a slip is fixable).
 export function tick(btn, rerender) {
