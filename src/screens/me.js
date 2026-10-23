@@ -1,7 +1,8 @@
 // Me: look and feel, reminders, habits, your data.
 import { state, setProfile, activeHabits, archivedHabits, archiveHabit, deleteHabit, reorder, exportJSON, exportCSV } from '../lib/store.js';
-import { THEMES, applyTheme } from '../lib/theme.js';
+import { THEMES, swapTheme } from '../lib/theme.js';
 import { I } from '../ui/icons.js';
+import { SOUNDS } from '../ui/feedback.js';
 import { esc, openSheet, closeSheet, confirmSheet, toast } from '../ui/sheets.js';
 import { cloud, syncLine } from '../lib/session.js';
 import { canInstall, installed } from '../ui/install.js';
@@ -25,7 +26,7 @@ export function render() {
     <section class="group"><div class="g-h">Look</div>
       <div class="themes" role="radiogroup" aria-label="Theme">${THEMES.map(t => `<button class="theme-pick ${p.theme === t.k ? 'on' : ''}" role="radio" aria-checked="${p.theme === t.k}" data-a="theme" data-k="${t.k}">
         <span class="t-sw" aria-hidden="true">${t.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span>
-        <span class="t-name">${t.name}${t.pro ? ' <span class="pro">Pro</span>' : ''}</span><span class="muted small">${t.desc}</span></button>`).join('')}</div>
+        <span class="t-name">${t.name}${t.pro ? ' <span class="pro beta">Free in beta</span>' : ''}</span><span class="muted small">${t.desc}</span></button>`).join('')}</div>
       ${toggle('sounds_on', 'Sounds')}${toggle('haptics_on', 'Haptics', 'A little buzz when you tick')}
     </section>
     <section class="group"><div class="g-h">Reminders</div>
@@ -42,7 +43,8 @@ export function render() {
       <a class="row-set" href="/privacy.html"><span>Privacy policy</span>${I.right}</a>
       <a class="row-set" href="/terms.html"><span>Terms</span>${I.right}</a>
     </section>
-    <p class="muted small center">KeepUp · unlimited habits, free forever</p>`;
+    <p class="beta-note"><span class="beta-tag">Beta</span><span>KeepUp is in beta, so <b>everything is free for now</b>. Unlimited habits, streaks and squads stay free forever. Some extras (like more looks) may become Pro later, and we’ll always ask first.</span></p>
+    <p class="muted small center mt3">KeepUp · made for people who keep going</p>`;
 }
 
 export function openManage(rerender) {
@@ -70,7 +72,10 @@ export function openManage(rerender) {
 }
 
 export function handle(a, el, rerender) {
-  if (a === 'theme') { setProfile({ theme: el.dataset.k }); applyTheme(el.dataset.k); rerender(); if (THEMES.find(t => t.k === el.dataset.k)?.pro) toast('Pro themes are free to try while KeepUp is in testing.'); }
+  if (a === 'theme') {
+    setProfile({ theme: el.dataset.k }); swapTheme(el.dataset.k, el); SOUNDS.theme();
+    document.querySelectorAll('[data-a="theme"]').forEach(b => { const on = b === el; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+  }
   if (a === 'pref') setProfile({ [el.dataset.k]: el.checked });
   if (a === 'weekstart') { setProfile({ week_start: +el.value }); rerender(); }
   if (a === 'evening') setProfile({ evening_reminder_at: el.value || null });

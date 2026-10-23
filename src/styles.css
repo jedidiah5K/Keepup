@@ -6,13 +6,6 @@
   --ridge-far: #3A4266; --ridge-mid: #20263F; --bar: #121214; --bar-ink: #F4F3EF;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  [data-theme="paper"] {
-    --bg: #0E0E0F; --surface: #18181A; --surface-2: #222225; --ink: #F2F0EA; --ink-2: #C9C6BE; --muted: #8C8981;
-    --line: #26262A; --line-2: #3A3A3F; --accent: #FF6A3D; --accent-ink: #111111; --done: #34C77B; --freeze: #6AA8F0; --danger: #FF6B60;
-    --ridge-far: #2A3052; --ridge-mid: #141830; --bar: #F2F0EA; --bar-ink: #111111; color-scheme: dark;
-  }
-}
 [data-theme="midnight"] {
   --bg: #0E0E0F; --surface: #18181A; --surface-2: #222225; --ink: #F2F0EA; --ink-2: #C9C6BE; --muted: #8C8981;
   --line: #26262A; --line-2: #3A3A3F; --accent: #FF6A3D; --accent-ink: #111111; --done: #34C77B; --freeze: #6AA8F0; --danger: #FF6B60;
@@ -373,11 +366,12 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .theme-pick { position: relative; display: grid; gap: .3rem; text-align: left; padding: .7rem; border-radius: 18px; box-shadow: inset 0 0 0 1.5px var(--line); align-content: start; transition: transform .3s var(--spring), box-shadow .2s; }
 .theme-pick:active { transform: scale(.96); }
 .theme-pick.on { box-shadow: inset 0 0 0 2px var(--ink); }
-.t-sw { display: flex; height: 2.6rem; border-radius: 12px; overflow: hidden; margin-bottom: .25rem; }
+.t-sw { display: flex; height: 2.6rem; border-radius: 12px; overflow: hidden; margin-bottom: .25rem; outline: 1px solid var(--line-2); outline-offset: -1px; }
 .t-sw i { flex: 1; transition: flex .4s var(--spring); }
 .theme-pick.on .t-sw i:nth-child(2) { flex: 1.8; }
 .t-name { font-weight: 600; }
 .theme-pick .small { font-size: .76rem; line-height: 1.35; }
+.pro.beta { background: var(--done); }
 .pro { font: 600 .58rem/1 var(--mono); letter-spacing: .08em; background: var(--accent); color: var(--accent-ink); padding: .2rem .35rem; border-radius: 6px; vertical-align: 2px; }
 .mlist li { display: flex; align-items: center; gap: .6rem; padding: .35rem 0; border-bottom: 1px solid var(--line); min-height: 3.4rem; background: var(--bg); }
 .mlist .drag { width: 2.75rem; height: 2.75rem; display: grid; place-items: center; color: var(--muted); touch-action: none; cursor: grab; }
@@ -412,6 +406,16 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .ob-pick:active { transform: scale(.94); }
 .ob-pick.on { background: var(--ink); color: var(--bg); box-shadow: none; }
 .ob .themes { margin-top: 1.25rem; }
+.stack-foot { flex-direction: column; gap: .6rem; }
+.welcome .hero { height: 58dvh; }
+.ob .theme-pick .small { display: none; }
+.beta-note { display: flex; gap: .6rem; align-items: flex-start; margin: 1rem 0 0; padding: .8rem .9rem; border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: .85rem; line-height: 1.45; color: var(--ink-2); animation: lift .7s var(--out) both .3s; }
+.beta-note b { color: var(--ink); }
+.beta-tag { flex: none; font: 600 .6rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: .3rem .4rem; border-radius: 6px; background: var(--ink); color: var(--bg); margin-top: .1rem; }
+/* Theme change: the new colours grow out from where you tapped. */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+.theme-swap::view-transition-new(root) { animation: reveal .6s var(--out) both; }
+@keyframes reveal { from { clip-path: circle(0 at var(--tx, 50%) var(--ty, 50%)); } to { clip-path: circle(150vmax at var(--tx, 50%) var(--ty, 50%)); } }
 .ob-foot { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); }
 
 /* ---------- account ---------- */
@@ -497,6 +501,23 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .join-preview { text-align: center; }
 .faces.sm { justify-content: center; margin-bottom: 1rem; }
 .faces.sm span { width: 2.6rem; height: 2.6rem; font-size: 1.2rem; }
+
+/* ---------- milestone moment ---------- */
+.milestone { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: fadein .3s both; }
+.milestone.out { animation: fadeout .4s both; }
+.ms-card { position: relative; display: grid; justify-items: center; text-align: center; gap: .2rem; padding: 2rem; }
+.ms-ring { position: absolute; top: 50%; left: 50%; width: 15rem; height: 15rem; translate: -50% -58%; border-radius: 50%; border: 2px solid var(--mc); opacity: 0; animation: ring 1.6s var(--out) .15s both; }
+.ms-n { font: 400 9rem/.85 var(--serif); color: var(--mc); letter-spacing: -.04em; animation: slam .8s var(--spring) both; }
+.ms-unit { font: 500 .75rem/1 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); animation: lift .6s var(--out) .25s both; }
+.ms-habit { font-weight: 600; margin-top: 1rem; animation: lift .6s var(--out) .35s both; }
+.ms-line { font: italic 400 1.5rem/1.2 var(--serif); max-width: 16rem; animation: lift .6s var(--out) .45s both; }
+@keyframes slam { 0% { transform: scale(2.4); opacity: 0; filter: blur(8px); } 60% { opacity: 1; filter: none; } 100% { transform: none; } }
+@keyframes ring { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.5); } }
+@keyframes fadein { from { opacity: 0; } }
+@keyframes fadeout { to { opacity: 0; } }
+/* Tab icons hop when picked. */
+.tabs button.hop svg { animation: tabhop .5s var(--spring); }
+@keyframes tabhop { 40% { transform: translateY(-4px) scale(1.12); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

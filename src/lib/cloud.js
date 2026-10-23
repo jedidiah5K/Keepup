@@ -93,7 +93,8 @@ async function pull() {
     rows.push(...page); if (page.length < 1000) break;
   }
   if (state.pending.length) return false; // a change came in while we were downloading; next sync gets it
-  if (prof) Object.assign(state.profile, prof, { evening_reminder_at: prof.evening_reminder_at?.slice(0, 5) ?? null, onboarded: true });
+  // Someone who already set KeepUp up on another phone skips the first-run steps here.
+  if (prof) Object.assign(state.profile, prof, { evening_reminder_at: prof.evening_reminder_at?.slice(0, 5) ?? null, onboarded: state.profile.onboarded || habits.length > 0 || !!prof.display_name });
   state.habits = habits.map(h => ({ ...h, reminder_time: h.reminder_time?.slice(0, 5) ?? null }));
   const ck = {}; for (const r of rows) (ck[r.habit_id] ||= {})[r.date] = r.count;
   state.checkins = ck;

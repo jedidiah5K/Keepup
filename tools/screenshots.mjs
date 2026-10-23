@@ -11,7 +11,12 @@ await new Promise(r => setTimeout(r, 2500));
 mkdirSync('shots', { recursive: true });
 
 // Sample data: 3 weeks of history so streaks, freezes and the heatmap show.
-const seed = () => {
+const fakeSession = () => {
+  const b64 = o => btoa(JSON.stringify(o)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const user = { id: '00000000-0000-0000-0000-0000000000aa', email: 'alex@example.com', aud: 'authenticated', role: 'authenticated' };
+  localStorage.setItem('keepup-auth', JSON.stringify({ access_token: `${b64({ alg: 'HS256' })}.${b64({ sub: user.id, exp: 4102444800 })}.x`, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user }));
+};
+const seed = theme => {
   const iso = d => d.toISOString().slice(0, 10), t = new Date(), day = n => iso(new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate() - n)));
   const H = (id, o) => ({ id, icon: '✅', colour: 'tangerine', kind: 'yes_no', target_count: 1, schedule_type: 'daily', schedule_days: [], times_per_week: null, reminder_time: null, start_date: day(60), archived_at: null, ...o });
   const habits = [
@@ -30,7 +35,7 @@ const seed = () => {
     if (n < 12 && n !== 6) checkins.p[day(n)] = 1;
   }
   checkins.w[day(0)] = 3; checkins.r[day(0)] = 1;
-  localStorage.setItem('keepup:v1', JSON.stringify({ profile: { display_name: 'Alex', week_start: 1, theme: 'paper', onboarded: true, sounds_on: false }, habits, checkins, pending: [] }));
+  localStorage.setItem('keepup:v1', JSON.stringify({ profile: { display_name: 'Alex', week_start: 1, theme, onboarded: true, sounds_on: false }, syncedUser: '00000000-0000-0000-0000-0000000000aa', habits, checkins, pending: [] }));
 };
 
 const browser = await chromium.launch({ executablePath: exe });
@@ -44,12 +49,19 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   const page = await ctx.newPage();
   const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => m.type() === 'error' && errors.push(m.text()));
   const shot = async name => { await page.waitForTimeout(1500); await page.screenshot({ path: `shots/${name}-${scheme}-${tag}.png` }); };
-  // first run
+  // The server can't be reached from here: answer every account call with "unavailable", so the app
+  // keeps its own copy and nothing is overwritten.
+  await page.route('**/*.supabase.co/**', r => r.fulfill({ status: 503, body: '{}' }));
+  // first run: the sign-in screen, then (with a pretend signed-in account) the setup steps
   await page.goto(URL); await page.evaluate(() => localStorage.clear()); await page.reload();
+  await shot('00-welcome');
+  await page.click('[data-a="auth"][data-mode="up"]'); await shot('00b-signup'); await page.keyboard.press('Escape');
+  await page.evaluate(fakeSession); await page.reload();
   await shot('01-intro');
   await page.fill('[data-ob="name"]', 'Alex'); await page.click('[data-a="obNext"]'); await shot('02-intro-habits');
+  await page.click('[data-a="obNext"]'); await shot('02b-intro-look');
   // seeded app
-  await page.evaluate(seed); await page.reload();
+  await page.evaluate(seed, scheme === 'dark' ? 'midnight' : 'paper'); await page.evaluate(fakeSession); await page.reload();
   await shot('03-today');
   await page.click('.habit[data-id="s"] .tick'); await page.click('.habit[data-id="p"] .tick'); await shot('04-today-ticked');
   for (let i = 0; i < 5; i++) await page.click('.habit[data-id="w"] .tick');
@@ -64,15 +76,11 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   await page.click('[data-tab="me"]'); await shot('12-me');
   await page.click('[data-a="manage"]'); await shot('13-manage');
   await page.keyboard.press('Escape');
-  await page.click('[data-a="auth"][data-mode="up"]'); await shot('14-account');
-  await page.fill('input[name=email]', 'nobody@example.com'); await page.fill('input[name=pw]', 'wrong-password-1');
-  await page.click('[data-to="in"]').catch(() => {});
-  await page.fill('input[name=email]', 'nobody@example.com'); await page.fill('input[name=pw]', 'wrong-password-1');
-  await page.click('.auth button[type=submit]'); await page.waitForTimeout(2500); await shot('15-signin-wrong');
-  await page.keyboard.press('Escape');
   await page.click('[data-a="install"]'); await shot('16-install-guide');
   await page.keyboard.press('Escape');
-  await page.click('[data-tab="today"]'); await page.evaluate(() => { document.getElementById('screen').scrollTop = 9999; }); await shot('17-today-install-card');
+  await page.click('[data-tab="today"]'); await page.click('.day.now').catch(() => {}); await page.click('[data-a="pickDay"]').catch(() => {});
+  await page.evaluate(() => { document.getElementById('screen').scrollTop = 9999; }); await shot('17-today-install-card');
+
   if (errors.length) console.log(scheme, tag, 'ERRORS:', errors);
   await ctx.close();
 }

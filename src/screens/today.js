@@ -5,7 +5,7 @@ import { habitStreak } from '../lib/streaks.js';
 import { COLOURS, inkOn } from '../lib/theme.js';
 import { I } from '../ui/icons.js';
 import { esc, toast } from '../ui/sheets.js';
-import { buzz, SOUNDS, burst, confetti } from '../ui/feedback.js';
+import { buzz, SOUNDS, burst, confetti, celebrate, MILESTONES } from '../ui/feedback.js';
 import { scene, mountScene } from '../ui/scene.js';
 import { canInstall, nudgeHidden, isIOS } from '../ui/install.js';
 
@@ -133,7 +133,11 @@ export function tick(btn, rerender) {
   if (nowDone && !wasDone) {
     buzz(14); setTimeout(() => burst(document.querySelector(`.habit[data-id="${id}"] .tick`), COLOURS[h.colour]), 60);
     const all = hsBefore.length && hsBefore.every(x => countFor(x.id, d) >= x.target_count);
-    if (all && !allBefore) { setTimeout(() => { SOUNDS.allDone(); confetti(36); buzz(30); }, 700); SOUNDS.pop(); } else SOUNDS.pop();
+    const doneN = activeHabits().filter(x => dueOn(x, d) && countFor(x.id, d) >= x.target_count).length;
+    SOUNDS.step(doneN - 1);
+    const st = streakOf(h, d), hit = d === today() && h.schedule_type !== 'x_per_week' && MILESTONES.includes(st.current);
+    if (hit) setTimeout(() => celebrate(st.current, `${h.icon} ${h.name}`, COLOURS[h.colour]), 450);
+    else if (all && !allBefore) setTimeout(() => { SOUNDS.summit(); confetti(36); buzz(30); }, 650);
   } else if (next > c) { SOUNDS.plus(); buzz(8); }
   else { SOUNDS.undo(); buzz(8); toast(`Unticked ${esc(h.name)} · <button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="${c}">Undo</button>`); }
   view.just = id; view.justFrom = c;

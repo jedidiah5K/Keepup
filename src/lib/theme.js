@@ -1,8 +1,8 @@
 // Looks people can pick under Me. Saved with the profile (follows the account) and in
 // localStorage (so the right colours show before anything loads). Same idea as JobDone's THEMES.
 export const THEMES = [
-  { k: 'paper', name: 'Paper', desc: 'Warm notebook paper. Goes dark when your phone does.', sw: ['#F6F1E7', '#FF5A1F', '#1C1A17'] },
-  { k: 'midnight', name: 'Midnight', desc: 'Dark all the time, with a tangerine glow.', sw: ['#151412', '#FF7A45', '#F3EEE4'] },
+  { k: 'paper', name: 'Paper', desc: 'Bone-white paper, ink, and one tangerine accent.', sw: ['#F4F3EF', '#FF4F1A', '#111111'] },
+  { k: 'midnight', name: 'Midnight', desc: 'Dark and calm, with a tangerine glow.', sw: ['#0E0E0F', '#FF6A3D', '#F2F0EA'] },
   { k: 'pool', name: 'Pool', desc: 'Chlorine blue and lane-rope stripes.', sw: ['#E6F4F7', '#0E8FB0', '#0B2A33'], pro: true },
   { k: 'matcha', name: 'Matcha', desc: 'Soft green tea and cream.', sw: ['#EEF2E3', '#5E8B3A', '#1F2A17'], pro: true },
 ];
@@ -11,6 +11,17 @@ export const COLOURS = {
   tangerine: '#FF5A1F', tomato: '#E5383B', berry: '#C2185B', grape: '#7B4BC4', ocean: '#1E6FD9',
   lagoon: '#0E8FB0', mint: '#1F9D7A', leaf: '#4C9A2A', sun: '#F2B705', cocoa: '#8A5A3C',
 };
+// First run: start on the look that matches the phone's light or dark setting.
+export const defaultTheme = () => (matchMedia('(prefers-color-scheme: dark)').matches ? 'midnight' : 'paper');
+
+// Switch looks with the new colours spreading out from the tap (where the browser can).
+export function swapTheme(k, from) {
+  const go = () => applyTheme(k), root = document.documentElement;
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches || root.dataset.theme === k) return go();
+  if (from) { const r = from.getBoundingClientRect(); root.style.setProperty('--tx', `${r.left + r.width / 2}px`); root.style.setProperty('--ty', `${r.top + r.height / 2}px`); }
+  root.classList.add('theme-swap');
+  document.startViewTransition(go).finished.finally(() => root.classList.remove('theme-swap'));
+}
 export function applyTheme(k) {
   document.documentElement.dataset.theme = THEMES.some(t => t.k === k) ? k : 'paper';
   try { localStorage.setItem('keepup-theme', document.documentElement.dataset.theme); } catch (e) {}

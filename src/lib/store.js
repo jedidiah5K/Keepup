@@ -3,12 +3,13 @@
 // as a pending operation until the server has it. Each row has an id made on the phone, so a
 // retried sync can never double count.
 import { localDate } from './dates.js';
+import { defaultTheme } from './theme.js';
 
 const LS = 'keepup:v1';
 const tz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } };
 
 export const state = {
-  profile: { display_name: '', timezone: tz(), week_start: 1, theme: 'paper', sounds_on: true, haptics_on: true, evening_reminder_at: '21:00', onboarded: false },
+  profile: { display_name: '', timezone: tz(), week_start: 1, theme: defaultTheme(), sounds_on: true, haptics_on: true, evening_reminder_at: '21:00', onboarded: false },
   habits: [],          // see keepup_habits columns
   checkins: {},        // { habitId: { 'YYYY-MM-DD': count } }
   pending: [],         // [{ op: 'upsert'|'delete', table, row }]

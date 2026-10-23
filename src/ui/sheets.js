@@ -1,4 +1,6 @@
 // Toasts and bottom sheets, ported from JobDone (pull a sheet down to close it, like iOS).
+import { SOUNDS } from './feedback.js';
+
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let toastT = null;
@@ -13,7 +15,7 @@ export function openSheet(html, opts = {}) {
   const root = document.getElementById('sheets');
   const wrap = document.createElement('div'); wrap.className = 'sheet-wrap';
   wrap.innerHTML = `<div class="scrim" data-a="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(opts.label || 'Sheet')}"><div class="grab"></div><div class="sheet-body">${html}</div></div>`;
-  root.appendChild(wrap);
+  root.appendChild(wrap); SOUNDS.sheet();
   const sh = { el: wrap, opts }; SHEETS.push(sh);
   dragToDismiss(sh);
   if (opts.mount) opts.mount(wrap.querySelector('.sheet-body'), sh);

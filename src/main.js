@@ -17,6 +17,7 @@ import { openHabitForm } from './screens/habitForm.js';
 import { setCount, habitById } from './lib/store.js';
 import { syncLine, loadCloud, cloud } from './lib/session.js';
 import { install, hideNudge } from './ui/install.js';
+import { SOUNDS, buzz } from './ui/feedback.js';
 const account = () => import('./screens/account.js');
 
 // Invite links look like keepup.app/?join=CODE. Keep the code until the person is signed in.
@@ -39,11 +40,12 @@ const app = document.getElementById('app');
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function render() {
+  if (!cloud.user) { app.innerHTML = `<main id="screen" class="screen intro-screen">${Intro.welcome()}</main>`; Intro.afterRender?.(app); render.last = null; return; }
   if (!state.profile.onboarded) { app.innerHTML = `<main id="screen" class="screen intro-screen">${Intro.render()}</main>`; Intro.afterRender?.(app); return; }
   const y = document.getElementById('screen')?.scrollTop || 0, same = render.last === NAV.tab;
   const ti = TABS.findIndex(t => t[0] === NAV.tab);
   app.innerHTML = `<main id="screen" class="screen scr-${NAV.tab}" tabindex="-1">${SCREENS[NAV.tab].render()}</main>
-    <nav class="tabs" aria-label="Main" style="--ti:${ti};--from:${render.lastTi ?? ti}"><span class="tab-ind" aria-hidden="true"></span>${TABS.map(([k, l, ic]) => `<button data-a="tab" data-tab="${k}" ${NAV.tab === k ? 'aria-current="page"' : ''}>${ic}<span>${l}</span></button>`).join('')}<button class="fab" data-a="newHabit" aria-label="Add a habit">${I.plus}</button></nav>`;
+    <nav class="tabs" aria-label="Main" style="--ti:${ti};--from:${render.lastTi ?? ti}"><span class="tab-ind" aria-hidden="true"></span>${TABS.map(([k, l, ic]) => `<button data-a="tab" data-tab="${k}" ${NAV.tab === k ? `aria-current="page" ${same ? '' : 'class="hop"'}` : ''}>${ic}<span>${l}</span></button>`).join('')}<button class="fab" data-a="newHabit" aria-label="Add a habit">${I.plus}</button></nav>`;
   const scr = document.getElementById('screen');
   if (same) scr.scrollTop = y; else scr.classList.add('enter');
   render.last = NAV.tab; render.lastTi = ti;
@@ -94,7 +96,7 @@ function habitMenu(id) {
 }
 
 const ACTIONS = {
-  tab: el => { if (NAV.tab === el.dataset.tab && NAV.tab !== 'stats') return; swap(() => { NAV.tab = el.dataset.tab; if (NAV.tab === 'stats') Stats.view.habit = null; render(); document.getElementById('screen').scrollTop = 0; }); },
+  tab: el => { if (NAV.tab === el.dataset.tab && NAV.tab !== 'stats') return; SOUNDS.tap(); buzz(6); swap(() => { NAV.tab = el.dataset.tab; if (NAV.tab === 'stats') Stats.view.habit = null; render(); document.getElementById('screen').scrollTop = 0; }); },
   pickDay: el => { Today.view.day = el.dataset.d; render(); },
   tick: el => Today.tick(el, render),
   undoTick: el => { setCount(el.dataset.id, el.dataset.d, +el.dataset.c); document.querySelector('.toast')?.remove(); render(); },
@@ -115,11 +117,12 @@ const ACTIONS = {
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
   const a = el.dataset.a;
-  if (a.startsWith('ob') && ACTIONS[a] === undefined) { const go = Intro.handle(a, el); go ? swap(render) : render(); return; }
+  if (a.startsWith('ob') && ACTIONS[a] === undefined) { if (Intro.handle(a, el)) swap(render); return; }
   if (ACTIONS[a]) return ACTIONS[a](el);
   if (['theme', 'manage', 'export'].includes(a)) Me.handle(a, el, render);
 });
 document.addEventListener('change', e => {
+  if (e.target.matches?.('.switch')) { SOUNDS.tap(); buzz(6); }
   const el = e.target.closest('[data-a]'); if (!el) return;
   if (['pref', 'weekstart', 'evening', 'name'].includes(el.dataset.a)) Me.handle(el.dataset.a, el, render);
 });
