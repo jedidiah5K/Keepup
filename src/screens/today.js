@@ -56,7 +56,7 @@ const roll = (n, on) => `<span class="roll ${on ? 'go' : ''}" aria-hidden="true"
 function habitRow(h, d, i) {
   const c = countFor(h.id, d), done = c >= h.target_count, col = COLOURS[h.colour] || COLOURS.tangerine;
   const st = streakOf(h, d), lock = !editable(d), just = view.just === h.id;
-  const frozenNow = st.frozen.length && st.frozen[st.frozen.length - 1] >= addDays(d, -6);
+  const frozenNow = st.current > 0 && st.frozen.length && st.frozen[st.frozen.length - 1] >= addDays(d, -6);
   const unit = st.unit === 'weeks' ? (st.current === 1 ? 'wk' : 'wks') : (st.current === 1 ? 'day' : 'days');
   const sub = h.schedule_type === 'x_per_week' ? `${st.weekDone} of ${st.weekTarget} this week` : h.kind === 'count' ? `${c} of ${h.target_count}` : h.schedule_type === 'weekdays' ? 'Some days' : 'Every day';
   // Lost a streak? Most people quit right here. Say something kind and keep their best on show.
@@ -102,7 +102,7 @@ export function render() {
     </section>
     <div class="sheet-top">
       ${weekStrip(d)}
-      ${isToday ? missedYesterday() : ''}
+      ${isToday ? missedYesterday() || recap() : ''}
       ${!editable(d) ? `<p class="note">${I.lock}<span>Days more than a week ago are locked, so streaks stay honest.</span></p>` : ''}
       ${!hs.length ? `<div class="empty"><h2 class="display">Start with <em>one</em> habit.</h2>
           <p class="muted">Small and daily beats big and rare. Add as many as you like, free, always.</p>
@@ -122,6 +122,36 @@ function missedYesterday() {
   const open = activeHabits().filter(h => dueOn(h, y) && h.schedule_type !== 'x_per_week' && countFor(h.id, y) < h.target_count && streakOf(h, addDays(y, -1)).current > 0);
   if (!open.length) return '';
   return `<button class="note yday" data-a="pickDay" data-d="${y}">${I.left}<span>${open.length === 1 ? `<b>${esc(open[0].name)}</b> isn’t ticked for yesterday.` : `${open.length} habits aren’t ticked for yesterday.`} Did you do ${open.length === 1 ? 'it' : 'them'}? Tap to fill in.</span></button>`;
+}
+
+// The first two days of a new week: how last week went, in one card. Closes for the week.
+const RECAP = 'keepup:recap';
+export const recapSeen = w => { try { return localStorage.getItem(RECAP) === w; } catch (e) { return true; } };
+export const hideRecap = w => { try { localStorage.setItem(RECAP, w); } catch (e) {} };
+function recap() {
+  const t = today(), w = weekOf(t, state.profile.week_start);
+  if (addDays(w, 2) <= t || recapSeen(w)) return '';
+  const w0 = addDays(w, -7), hs = activeHabits().filter(h => h.start_date <= addDays(w, -1));
+  if (!hs.length) return '';
+  let due = 0, done = 0, perfect = 0; const per = [];
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(w0, i), list = hs.filter(h => dueOn(h, d) && h.schedule_type !== 'x_per_week');
+    const n = list.filter(h => countFor(h.id, d) >= h.target_count).length;
+    due += list.length; done += n; if (list.length && n === list.length) perfect++;
+  }
+  for (const h of hs) {
+    if (h.schedule_type === 'x_per_week') { let n = 0; for (let i = 0; i < 7; i++) if (countFor(h.id, addDays(w0, i)) >= h.target_count) n++; due += h.times_per_week; done += Math.min(n, h.times_per_week); per.push([h, Math.min(1, n / h.times_per_week)]); continue; }
+    let dn = 0, dd = 0; for (let i = 0; i < 7; i++) { const d = addDays(w0, i); if (dueOn(h, d)) { dd++; if (countFor(h.id, d) >= h.target_count) dn++; } }
+    if (dd) per.push([h, dn / dd]);
+  }
+  if (!due) return '';
+  const p = Math.round(done / due * 100), star = per.sort((a, b) => b[1] - a[1])[0];
+  const line = p >= 90 ? 'An almost perfect week. Do it again.' : p >= 70 ? 'A strong week. Keep the rhythm going.' : p >= 40 ? 'Not bad. This week, aim for one more tick a day.' : 'A slow week. That’s fine, today is a fresh start.';
+  return `<aside class="recap" data-w="${w}">
+    <div class="recap-top"><span class="eyebrow">Last week</span><button class="x" data-a="hideRecap" aria-label="Close">×</button></div>
+    <div class="recap-nums"><b data-count="${p}" data-suffix="%">${p}%</b><span><b>${perfect}</b> perfect day${perfect === 1 ? '' : 's'}${star && star[1] > 0 ? `<br>Best: ${esc(star[0].icon)} ${esc(star[0].name)}` : ''}</span></div>
+    <p class="muted small">${line}</p>
+  </aside>`;
 }
 
 // While in beta, KeepUp is installed from the browser. A quiet card, not a pop-up.

@@ -8,7 +8,7 @@ for (const [hour, name] of [[8, 'morning'], [20, 'evening']]) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   page.on('pageerror', e => console.log('ERR', e.message));
-  await page.clock.setFixedTime(new Date(2026, 9, 23, hour, 0));
+  await page.clock.setFixedTime(new Date(2026, 9, process.env.DAY ? +process.env.DAY : 23, hour, 0));
   await page.route('**/*.supabase.co/**', r => r.fulfill({ status: 503, body: '{}' }));
   await page.goto('http://localhost:4184/');
   await page.evaluate(() => { const b64 = o => btoa(JSON.stringify(o)).replace(/=+$/, ''); const user = { id: '00000000-0000-0000-0000-0000000000aa', email: 'a@x.com' };

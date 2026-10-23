@@ -560,3 +560,15 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .ob-foot { position: sticky; bottom: 0; z-index: 3; background: linear-gradient(to top, var(--bg) 70%, transparent); }
 .ob:has([data-step="look"]) .hero { height: 34dvh; }
 .t-name .pro { white-space: nowrap; display: inline-block; }
+
+/* Last week's recap, on the first days of a new week */
+.recap { position: relative; margin: 0 0 1.25rem; padding: 1rem 1.1rem 1.05rem; border-radius: 22px; background: var(--ink); color: var(--bg); animation: lift .7s var(--out) both .25s; transition: opacity .25s, transform .25s var(--out); overflow: hidden; }
+.recap::after { content: ''; position: absolute; right: -30px; bottom: -40px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--accent) 55%, transparent), transparent 70%); pointer-events: none; }
+.recap .eyebrow { color: color-mix(in oklab, var(--bg) 60%, transparent); }
+.recap-top { display: flex; justify-content: space-between; align-items: center; }
+.recap .x { color: inherit; opacity: .6; }
+.recap-nums { display: flex; align-items: flex-end; gap: 1rem; margin: .35rem 0 .5rem; }
+.recap-nums > b { font: 400 3.4rem/.9 var(--serif); }
+.recap-nums span { font-size: .85rem; line-height: 1.35; padding-bottom: .2rem; }
+.recap .muted { color: color-mix(in oklab, var(--bg) 70%, transparent); margin: 0; }
+.recap.bye { opacity: 0; transform: scale(.96) translateY(6px); }

@@ -121,6 +121,7 @@ const ACTIONS = {
   deleteAccount: async () => (await account()).openDeleteAccount(),
   syncNow: async () => (await loadCloud()).sync(),
   install: () => install(),
+  hideRecap: el => { const c = el.closest('.recap'); Today.hideRecap(c.dataset.w); c.classList.add('bye'); setTimeout(render, 280); },
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };
 
