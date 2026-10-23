@@ -104,7 +104,7 @@ export function setProfile(patch) { Object.assign(state.profile, patch); queue('
 
 // Everything this person has, for Me → Export.
 export function exportJSON() {
-  return JSON.stringify({ exported_at: new Date().toISOString(), profile: state.profile, habits: state.habits, checkins: state.checkins }, null, 2);
+  return JSON.stringify({ exported_at: new Date().toISOString(), profile: state.profile, habits: state.habits, checkins: state.checkins, breaks: state.breaks }, null, 2);
 }
 export function exportCSV() {
   const rows = [['habit', 'date', 'count', 'target', 'done']];
