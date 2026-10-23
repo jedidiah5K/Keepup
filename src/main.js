@@ -15,9 +15,18 @@ import * as Me from './screens/me.js';
 import * as Intro from './screens/intro.js';
 import { openHabitForm } from './screens/habitForm.js';
 import { setCount, habitById } from './lib/store.js';
-import { syncLine, loadCloud } from './lib/session.js';
+import { syncLine, loadCloud, cloud } from './lib/session.js';
 import { install, hideNudge } from './ui/install.js';
 const account = () => import('./screens/account.js');
+
+// Invite links look like keepup.app/?join=CODE. Keep the code until the person is signed in.
+const JOIN = 'keepup:join';
+try {
+  const q = new URLSearchParams(location.search).get('join');
+  if (q) { localStorage.setItem(JOIN, q.slice(0, 64)); history.replaceState(null, '', location.pathname); }
+} catch (e) {}
+const takeJoin = () => { try { const c = localStorage.getItem(JOIN); if (c) localStorage.removeItem(JOIN); return c; } catch (e) { return null; } };
+const hasJoin = () => { try { return !!localStorage.getItem(JOIN); } catch (e) { return false; } };
 
 load();
 applyTheme(state.profile.theme);
@@ -95,6 +104,7 @@ const ACTIONS = {
   openStats: el => swap(() => { Stats.view.habit = el.dataset.id; render.last = null; render(); document.getElementById('screen').scrollTop = 0; }),
   statsBack: () => swap(() => { Stats.view.habit = null; render.last = null; render(); }),
   closeSheet: () => closeSheet(),
+  ...Squad.ACTIONS,
   auth: async el => (await account()).openAuth(el.dataset.mode),
   signOut: async () => (await account()).confirmSignOut(),
   syncNow: async () => (await loadCloud()).sync(),
@@ -134,7 +144,12 @@ addEventListener('keepup:cloud', () => {
   const a = document.activeElement;
   if (document.querySelector('.sheet-wrap') || (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName))) { const l = document.querySelector('.sync-line'); if (l) l.textContent = syncLine(); return; }
   render();
+  if (cloud.user && hasJoin() && state.profile.onboarded) { NAV.tab = 'squad'; render(); Squad.openJoin(takeJoin()); }
 });
+// Squad data arrived: redraw the squad tab (not while a sheet is open).
+addEventListener('keepup:squad', () => { if (NAV.tab === 'squad' && !document.querySelector('.sheet-wrap')) render(); });
+// Signed-out person opening an invite link: show the squad and ask them to make an account.
+if (hasJoin() && state.profile.onboarded) { NAV.tab = 'squad'; render(); setTimeout(() => { if (!cloud.user) Squad.openJoin(null); }, 1200); }
 addEventListener('keepup:installable', () => render());
 if ('serviceWorker' in navigator && import.meta.env.PROD) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 window.KeepUp = { state, render, toast };

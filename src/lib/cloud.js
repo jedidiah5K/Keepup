@@ -37,6 +37,7 @@ export async function start() {
 // first: this phone hasn't synced with this account yet, so upload everything it has (old days too).
 export async function sync({ first = false, quiet = false } = {}) {
   if (!cloud.user || cloud.syncing || !navigator.onLine) return;
+  const hadError = cloud.error; let pulled = false;
   cloud.syncing = true; cloud.error = null;
   try {
     if (first) {
@@ -50,12 +51,14 @@ export async function sync({ first = false, quiet = false } = {}) {
       state.syncedUser = cloud.user.id;
     }
     await flush();
-    if (!quiet || first) await pull();
+    if (!quiet || first) pulled = await pull();
     cloud.lastSync = new Date();
   } catch (e) {
     cloud.error = e.message || String(e);
   } finally {
-    cloud.syncing = false; save(true); changed();
+    cloud.syncing = false; save(true);
+    // Redraw only when something on screen may have changed, so ticks don't get interrupted.
+    if (pulled || first || hadError !== cloud.error) changed(); else dispatchEvent(new Event('keepup:synced'));
   }
 }
 
@@ -81,7 +84,7 @@ async function flush() {
 
 // Bring the account's data down. Only runs with nothing waiting to go up, so nothing local is lost.
 async function pull() {
-  if (state.pending.length) return;
+  if (state.pending.length) return false;
   const prof = await must(sb.from('keepup_profiles').select(PROFILE_COLS.join(',')).maybeSingle());
   const habits = await must(sb.from('keepup_habits').select(HABIT_COLS.join(',')).eq('user_id', cloud.user.id));
   const rows = [];
@@ -89,11 +92,12 @@ async function pull() {
     const page = await must(sb.from('keepup_checkins').select('habit_id,date,count').eq('user_id', cloud.user.id).order('date').range(from, from + 999));
     rows.push(...page); if (page.length < 1000) break;
   }
-  if (state.pending.length) return; // a change came in while we were downloading; next sync gets it
+  if (state.pending.length) return false; // a change came in while we were downloading; next sync gets it
   if (prof) Object.assign(state.profile, prof, { evening_reminder_at: prof.evening_reminder_at?.slice(0, 5) ?? null, onboarded: true });
   state.habits = habits.map(h => ({ ...h, reminder_time: h.reminder_time?.slice(0, 5) ?? null }));
   const ck = {}; for (const r of rows) (ck[r.habit_id] ||= {})[r.date] = r.count;
   state.checkins = ck;
+  return true;
 }
 
 const site = () => location.origin + '/';
