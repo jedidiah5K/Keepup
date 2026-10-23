@@ -40,7 +40,7 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, colorScheme: scheme, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => m.type() === 'error' && errors.push(m.text()));
-  const shot = async name => { await page.waitForTimeout(450); await page.screenshot({ path: `shots/${name}-${scheme}-${tag}.png` }); };
+  const shot = async name => { await page.waitForTimeout(1500); await page.screenshot({ path: `shots/${name}-${scheme}-${tag}.png` }); };
   // first run
   await page.goto(URL); await page.evaluate(() => localStorage.clear()); await page.reload();
   await shot('01-intro');
@@ -50,7 +50,7 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   await shot('03-today');
   await page.click('.habit[data-id="s"] .tick'); await page.click('.habit[data-id="p"] .tick'); await shot('04-today-ticked');
   for (let i = 0; i < 5; i++) await page.click('.habit[data-id="w"] .tick');
-  await page.click('.habit[data-id="g"] .tick'); await page.waitForTimeout(900); await shot('05-today-alldone');
+  await page.click('.habit[data-id="g"] .tick'); await page.evaluate(() => { document.getElementById('screen').scrollTop = 0; }); await page.waitForTimeout(900); await shot('05-today-alldone');
   await page.click('[data-a="newHabit"].fab'); await shot('06-new-habit');
   await page.click('[data-x="sched"][data-v="x_per_week"]'); await shot('07-new-habit-xweek');
   await page.keyboard.press('Escape');

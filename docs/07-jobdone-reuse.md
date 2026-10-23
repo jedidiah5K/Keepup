@@ -51,7 +51,7 @@ Same safety (RLS on every table), less setup.
 | Charts | charts section | Copy for stats; add heatmap |
 | Me / settings rows | iOS-style settings rows | Copy |
 | Sign-in, reset, change password, 2-step sign-in | hosted Supabase section, MFA section | Copy; add Google + Apple sign-in |
-| Sign-up guard | `signup` Edge Function | Copy; add Turnstile; **fix the bug below** |
+| Sign-up guard | `signup` Edge Function | Copy; add Turnstile |
 | Delete account | `delete-account` function | Copy; delete KeepUp rows |
 | Web push | `rest-push` function + `sw.js` push handler + pg_cron | Copy for browser users; phones use FCM/APNs |
 | Feedback inbox, crash notes | feedback, `jobdone_errors` | Copy |
@@ -61,11 +61,9 @@ Same safety (RLS on every table), less setup.
 
 ## Things to know (JobDone is not changed; just telling you)
 
-1. **Probable bug in JobDone's sign-up limit.** `signup/index.ts` counts recent sign-ups
-   with `.gte('at', since)`, but `schema.sql` names that column `created_at`. If the live
-   table matches `schema.sql`, the query errors, the count reads as 0, and the 5-per-hour
-   limit never kicks in. KeepUp's copy will use the right column. Want me to fix JobDone too?
-   (Only with your OK.)
+1. **Sign-up limit: not a bug after all.** `signup/index.ts` counts recent sign-ups with
+   `.gte('at', since)` while `schema.sql` names that column `created_at`, but the live table
+   does have an `at` column, so the limit works. Only the `schema.sql` file is out of date.
 2. **Themes and store rules.** JobDone's Skyline (Spider-Man style) and Agent (Hitman
    style) looks are fine for a personal app, but selling them as Pro themes in the stores
    could get flagged for copying other brands. KeepUp gets its own original looks.

@@ -1,6 +1,6 @@
--- KeepUp core tables. Shares the Supabase project with JobDone; every table is prefixed keepup_
--- and has row-level security on, so the two apps never see each other's data.
--- Nothing here touches jobdone_* tables.
+-- KeepUp core tables. Lives in Job's second free Supabase project (ref xgmwqpasogwlvtjaapwo),
+-- not JobDone's live one, so KeepUp has its own accounts. Every table is prefixed keepup_ and has
+-- row-level security on, so other apps in the same project never see KeepUp data.
 
 -- ---------- profiles ----------
 create table if not exists public.keepup_profiles (
@@ -193,45 +193,63 @@ alter table public.keepup_feedback enable row level security;
 alter table public.keepup_security_events enable row level security;
 
 -- Own profile only. Squadmates get display names through keepup_squadmates() below, never the row.
+drop policy if exists "own profile" on public.keepup_profiles;
 create policy "own profile" on public.keepup_profiles for all to authenticated
   using (id = (select auth.uid())) with check (id = (select auth.uid()));
 
+drop policy if exists "own habits" on public.keepup_habits;
 create policy "own habits" on public.keepup_habits for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+drop policy if exists "own checkins" on public.keepup_checkins;
 create policy "own checkins" on public.keepup_checkins for select to authenticated
   using (user_id = (select auth.uid()));
+drop policy if exists "add own checkins" on public.keepup_checkins;
 create policy "add own checkins" on public.keepup_checkins for insert to authenticated
   with check (user_id = (select auth.uid()));
+drop policy if exists "change own checkins" on public.keepup_checkins;
 create policy "change own checkins" on public.keepup_checkins for update to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 -- Unticking is limited to the last 7 days too. (Deleting a whole habit still removes all its
 -- check-ins: foreign-key cascades are not subject to these rules.)
+drop policy if exists "untick recent checkins" on public.keepup_checkins;
 create policy "untick recent checkins" on public.keepup_checkins for delete to authenticated
   using (user_id = (select auth.uid()) and date >= current_date - 8);
+drop policy if exists "own and shared freezes" on public.keepup_streak_freezes;
 create policy "own and shared freezes" on public.keepup_streak_freezes for select to authenticated
   using (user_id = (select auth.uid()) or public.keepup_habit_shared_with_me(habit_id));
 
+drop policy if exists "members read squad" on public.keepup_squads;
 create policy "members read squad" on public.keepup_squads for select to authenticated
   using (id in (select public.keepup_my_squads()));
+drop policy if exists "members read members" on public.keepup_squad_members;
 create policy "members read members" on public.keepup_squad_members for select to authenticated
   using (squad_id in (select public.keepup_my_squads()));
+drop policy if exists "members read shared" on public.keepup_squad_shared_habits;
 create policy "members read shared" on public.keepup_squad_shared_habits for select to authenticated
   using (squad_id in (select public.keepup_my_squads()));
+drop policy if exists "share own habits" on public.keepup_squad_shared_habits;
 create policy "share own habits" on public.keepup_squad_shared_habits for insert to authenticated
   with check (squad_id in (select public.keepup_my_squads())
               and exists (select 1 from public.keepup_habits h where h.id = habit_id and h.user_id = (select auth.uid())));
+drop policy if exists "unshare own habits" on public.keepup_squad_shared_habits;
 create policy "unshare own habits" on public.keepup_squad_shared_habits for delete to authenticated
   using (exists (select 1 from public.keepup_habits h where h.id = habit_id and h.user_id = (select auth.uid())));
+drop policy if exists "members read squad streak" on public.keepup_squad_streaks;
 create policy "members read squad streak" on public.keepup_squad_streaks for select to authenticated
   using (squad_id in (select public.keepup_my_squads()));
+drop policy if exists "see own nudges" on public.keepup_nudges;
 create policy "see own nudges" on public.keepup_nudges for select to authenticated
   using (from_user = (select auth.uid()) or to_user = (select auth.uid()));
+drop policy if exists "own badges" on public.keepup_badges_earned;
 create policy "own badges" on public.keepup_badges_earned for select to authenticated
   using (user_id = (select auth.uid()));
+drop policy if exists "own subscription" on public.keepup_subscriptions;
 create policy "own subscription" on public.keepup_subscriptions for select to authenticated
   using (user_id = (select auth.uid()));
+drop policy if exists "own push tokens" on public.keepup_push_tokens;
 create policy "own push tokens" on public.keepup_push_tokens for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+drop policy if exists "send feedback" on public.keepup_feedback;
 create policy "send feedback" on public.keepup_feedback for insert to authenticated
   with check (user_id = (select auth.uid()));
 -- keepup_security_events: no policies (server only).
@@ -343,7 +361,7 @@ language sql stable security definer set search_path = public as $$
   where s.invite_code = code group by s.id
 $$;
 
--- No trigger on auth.users: that table is shared with JobDone. The app creates the
+-- No trigger on auth.users: other apps may share this project. The app creates the
 -- keepup_profiles row itself at the end of sign-up (allowed by the "own profile" policy).
 
 -- Lock down: the trigger function is never called directly, and signed-out visitors can only

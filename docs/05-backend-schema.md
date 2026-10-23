@@ -1,9 +1,10 @@
 # 5. Backend schema
 
-Supabase Postgres, sharing JobDone's free project. Like JobDone's `jobdone_*` tables, every
+Supabase Postgres, in Job's spare free project (ref `xgmwqpasogwlvtjaapwo`), not JobDone's live
+one. Like JobDone's `jobdone_*` tables, every
 KeepUp table lives in `public` with a **`keepup_` prefix** (`keepup_profiles`,
 `keepup_habits`, `keepup_checkins`…). Names below drop the prefix for readability. RLS is on
-for every table, so KeepUp and JobDone data never mix, and JobDone's tables are not touched.
+for every table. JobDone's live project is never touched.
 
 Changes from the draft in the prompt are marked **(new)** or **(changed)**.
 

@@ -29,7 +29,7 @@ same everywhere. Nothing else in the stack changes.
 |---|---|---|
 | Front end | Vanilla JS like JobDone (no framework), split into modules and built with Vite, installable PWA with a service worker. See `07-jobdone-reuse.md` | $0 |
 | Native shell | Capacitor (current major), Android + iOS projects in this repo | $0 |
-| Database + auth | Supabase (Postgres, Auth, RLS, Edge Functions, pg_cron). Shares JobDone's free project, tables named `keepup_*` like JobDone's `jobdone_*` | $0 while small |
+| Database + auth | Supabase (Postgres, Auth, RLS, Edge Functions, pg_cron). Job's spare free project (not JobDone's live one), tables named `keepup_*` like JobDone's `jobdone_*` | $0 while small |
 | Email | Resend (reset emails), same as JobDone | $0 tier |
 | Hosting (web) | Vercel like JobDone, same security headers; subdomain of your domain once bought | $0 |
 | Push | Firebase Cloud Messaging (Android, and iPhone via an APNs key), web push (VAPID) for browser users | $0 |

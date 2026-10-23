@@ -9,7 +9,7 @@ const toggle = (key, label, sub = '') => `<label class="row-set"><span><span>${l
 
 export function render() {
   const p = state.profile;
-  return `<header class="top"><div><div class="eyebrow">Me</div><h1>${esc(p.display_name || 'You')}</h1></div></header>
+  return `<header class="top"><div><div class="eyebrow">Me</div><h1>${p.display_name ? `<em>${esc(p.display_name)}</em>` : 'You'}</h1></div></header>
     <section class="group"><div class="g-h">You</div>
       <label class="row-set"><span>Name</span><input class="in-right" data-a="name" maxlength="40" value="${esc(p.display_name)}" placeholder="Your name" autocomplete="given-name"></label>
     </section>
