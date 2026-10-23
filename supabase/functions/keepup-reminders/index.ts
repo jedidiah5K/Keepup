@@ -15,14 +15,14 @@ Deno.serve(async () => {
   if (!due?.length) return Response.json({ sent: 0 });
 
   const { data: phones } = await db.from('keepup_push_tokens').select('id, user_id, token, keys')
-    .eq('kind', 'webpush').in('user_id', [...new Set(due.map(r => r.user_id))]);
+    .eq('kind', 'webpush').in('user_id', [...new Set(due.map((r: any) => r.user_id))]);
   let sent = 0; const gone: number[] = [];
-  await Promise.all(due.flatMap(r => (phones || []).filter(p => p.user_id === r.user_id).map(async p => {
+  await Promise.all(due.flatMap((r: any) => (phones || []).filter((p: any) => p.user_id === r.user_id).map(async (p: any) => {
     try {
       await webpush.sendNotification({ endpoint: p.token, keys: p.keys },
         JSON.stringify({ title: r.title, body: r.body, tag: r.tag, url: '/' }), { TTL: 60 * 60, urgency: 'normal' });
       sent++;
-    } catch (e) {
+    } catch (e: any) {
       // 404/410: the phone turned notifications off or the app was removed, so forget it.
       if (e?.statusCode === 404 || e?.statusCode === 410) gone.push(p.id);
       else console.error('push failed', e?.statusCode, e?.body);
