@@ -14,7 +14,7 @@ import * as Squad from './screens/squad.js';
 import * as Me from './screens/me.js';
 import * as Intro from './screens/intro.js';
 import { openHabitForm } from './screens/habitForm.js';
-import { setCount, habitById, countFor, editable, today } from './lib/store.js';
+import { setCount, habitById, countFor, editable, today, endBreak } from './lib/store.js';
 import { syncLine, loadCloud, cloud } from './lib/session.js';
 import { install, hideNudge } from './ui/install.js';
 import { SOUNDS, buzz } from './ui/feedback.js';
@@ -138,6 +138,7 @@ const ACTIONS = {
   deleteAccount: async () => (await account()).openDeleteAccount(),
   syncNow: async () => (await loadCloud()).sync(),
   install: () => install(),
+  endBreak: () => { endBreak(); SOUNDS.step(4); toast('Welcome back. Let’s go.'); render(); },
   hideRecap: el => { const c = el.closest('.recap'); Today.hideRecap(c.dataset.w); c.classList.add('bye'); setTimeout(render, 280); },
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };
@@ -147,7 +148,7 @@ document.addEventListener('click', e => {
   const a = el.dataset.a;
   if (a.startsWith('ob') && ACTIONS[a] === undefined) { if (Intro.handle(a, el)) swap(render); return; }
   if (ACTIONS[a]) return ACTIONS[a](el);
-  if (['theme', 'manage', 'export'].includes(a)) Me.handle(a, el, render);
+  if (['theme', 'manage', 'export', 'takeBreak'].includes(a)) Me.handle(a, el, render);
 });
 document.addEventListener('change', e => {
   if (e.target.matches?.('.switch')) { SOUNDS.tap(); buzz(6); }

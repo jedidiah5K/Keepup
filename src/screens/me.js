@@ -1,5 +1,5 @@
 // Me: look and feel, reminders, habits, your data.
-import { state, setProfile, activeHabits, archivedHabits, archiveHabit, deleteHabit, reorder, exportJSON, exportCSV } from '../lib/store.js';
+import { state, setProfile, activeHabits, archivedHabits, archiveHabit, deleteHabit, reorder, exportJSON, exportCSV, currentBreak, startBreak, endBreak } from '../lib/store.js';
 import { THEMES, swapTheme } from '../lib/theme.js';
 import { I } from '../ui/icons.js';
 import { SOUNDS } from '../ui/feedback.js';
@@ -35,6 +35,8 @@ export function render() {
     </section>
     <section class="group"><div class="g-h">Habits</div>
       <label class="row-set"><span>Week starts on</span><select class="in-right" data-a="weekstart"><option value="1" ${p.week_start === 1 ? 'selected' : ''}>Monday</option><option value="7" ${p.week_start === 7 ? 'selected' : ''}>Sunday</option></select></label>
+      ${(b => b ? `<button class="row-set" data-a="endBreak"><span><span>On a break 🌴</span><span class="muted small">Until ${esc(new Date(b.end_date + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}. Tap to come back early.</span></span>${I.right}</button>`
+        : `<button class="row-set" data-a="takeBreak"><span><span>Take a break</span><span class="muted small">Holiday or sick? Pause every streak for up to 30 days.</span></span>${I.right}</button>`)(currentBreak())}
       <button class="row-set" data-a="manage"><span>Manage habits</span><span class="muted">${activeHabits().length}${archivedHabits().length ? ` · ${archivedHabits().length} archived` : ''} ${I.right}</span></button>
     </section>
     <section class="group"><div class="g-h">Your data</div>
@@ -82,9 +84,22 @@ export function handle(a, el, rerender) {
   if (a === 'evening') setProfile({ evening_reminder_at: el.value || null });
   if (a === 'name') setProfile({ display_name: el.value.trim().slice(0, 40) });
   if (a === 'manage') openManage(rerender);
+  if (a === 'takeBreak') openBreak(rerender);
   if (a === 'export') {
     const csv = el.dataset.f === 'csv', blob = new Blob([csv ? exportCSV() : exportJSON()], { type: csv ? 'text/csv' : 'application/json' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `keepup-${new Date().toISOString().slice(0, 10)}.${csv ? 'csv' : 'json'}`;
     document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 2000);
   }
+}
+
+// Take a break: pick how long. Starts today; no going back in time, so streaks stay honest.
+export function openBreak(rerender) {
+  const opts = [[3, '3 days'], [7, 'A week'], [14, 'Two weeks'], [30, 'Until I’m back', 'Up to 30 days']];
+  const sh = openSheet(`<h2 class="sheet-h serif-h">Take a <em>break</em></h2>
+    <p class="muted">Holiday, exams, feeling ill. While you’re on a break, missed days don’t break any streak. Anything you tick still counts. Your squad streak isn’t paused.</p>
+    <div class="stack mt3">${opts.map(([n, l, sub]) => `<button class="row-set" data-n="${n}"><span><span>${l}</span>${sub ? `<span class="muted small">${sub}</span>` : ''}</span>${I.right}</button>`).join('')}</div>
+    <p class="muted small mt2">Starts today. You can come back early any time.</p>`, {
+    label: 'Take a break', onClose: rerender,
+    mount: b => b.onclick = e => { const n = e.target.closest('[data-n]')?.dataset.n; if (!n) return; startBreak(+n); SOUNDS.theme(); closeSheet(sh); toast('Enjoy the break. Your streaks are safe.'); },
+  });
 }

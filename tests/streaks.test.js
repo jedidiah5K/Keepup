@@ -159,3 +159,33 @@ describe('completion', () => {
     expect(completion(daily, counts(days(MON, 3)), MON, addDays(MON, 3))).toBe(0.75);
   });
 });
+
+describe('breaks', () => {
+  const gym = { kind: 'yes_no', target_count: 1, schedule_type: 'x_per_week', times_per_week: 3, start: '2026-09-01' };
+  it('missed days on a break are skipped, not counted as misses', () => {
+    // done Mon–Tue, break Wed–Fri (nothing ticked), done Sat
+    const r = habitStreak(daily, counts(days(MON, 2), addDays(MON, 5)), { today: addDays(MON, 5), freezesPerWeek: 0, breaks: [{ start_date: addDays(MON, 2), end_date: addDays(MON, 4) }] });
+    expect(r.current).toBe(3);
+  });
+  it('ticks on a break still count', () => {
+    const r = habitStreak(daily, counts(days(MON, 3)), { today: addDays(MON, 2), freezesPerWeek: 0, breaks: [{ start_date: addDays(MON, 1), end_date: null }] });
+    expect(r.current).toBe(3);
+  });
+  it('an open break covers today and keeps the streak', () => {
+    const r = habitStreak(daily, counts(days(MON, 2)), { today: addDays(MON, 4), freezesPerWeek: 0, breaks: [{ start_date: addDays(MON, 2), end_date: null }] });
+    expect(r.current).toBe(2);
+  });
+  it('a missed day after the break ends still breaks it', () => {
+    const r = habitStreak(daily, counts(days(MON, 2)), { today: addDays(MON, 5), freezesPerWeek: 0, breaks: [{ start_date: addDays(MON, 2), end_date: addDays(MON, 3) }] });
+    expect(r.current).toBe(0);
+  });
+  it('a week with a break neither counts nor breaks a weekly streak', () => {
+    const prev = addDays(MON, -7), next = addDays(MON, 7);
+    const c = counts(prev, addDays(prev, 2), addDays(prev, 4), next, addDays(next, 1), addDays(next, 2));
+    const r = habitStreak(gym, c, { today: addDays(next, 6), freezesPerWeek: 0, breaks: [{ start_date: addDays(MON, 1), end_date: addDays(MON, 3) }] });
+    expect(r.current).toBe(2);
+  });
+  it('completion leaves missed break days out', () => {
+    expect(completion(daily, counts(days(MON, 2)), MON, addDays(MON, 3), [{ start_date: addDays(MON, 2), end_date: null }])).toBe(1);
+  });
+});

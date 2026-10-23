@@ -1,5 +1,5 @@
 // Today: week strip, this week's summary, and one big tick per habit.
-import { state, today, activeHabits, countFor, setCount, editable } from '../lib/store.js';
+import { state, today, activeHabits, countFor, setCount, editable, currentBreak } from '../lib/store.js';
 import { addDays, weekOf, isoWeekday } from '../lib/dates.js';
 import { habitStreak } from '../lib/streaks.js';
 import { COLOURS, inkOn } from '../lib/theme.js';
@@ -16,7 +16,7 @@ const fmtDay = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { we
 
 // Is the habit on the list for this day? "X a week" habits show every day.
 export const dueOn = (h, d) => d >= h.start_date && (h.schedule_type !== 'weekdays' || h.schedule_days.includes(isoWeekday(d)));
-export const streakOf = (h, upTo = today()) => habitStreak({ ...h, start: h.start_date }, state.checkins[h.id] || {}, { today: upTo, weekStart: state.profile.week_start, freezesPerWeek: 1 });
+export const streakOf = (h, upTo = today()) => habitStreak({ ...h, start: h.start_date }, state.checkins[h.id] || {}, { today: upTo, weekStart: state.profile.week_start, freezesPerWeek: 1, breaks: state.breaks });
 
 function dayProgress(d) {
   const hs = activeHabits().filter(h => dueOn(h, d) && h.schedule_type !== 'x_per_week');
@@ -63,7 +63,7 @@ function habitRow(h, d, i) {
   // Lost a streak? Most people quit right here. Say something kind and keep their best on show.
   const comeback = !st.current && st.longest >= 3 && h.schedule_type !== 'x_per_week' && !c;
   // Evening, streak going, not done yet: say what's at stake.
-  const atRisk = !done && st.current >= 3 && d === today() && h.schedule_type !== 'x_per_week' && new Date().getHours() >= 18;
+  const atRisk = !done && st.current >= 3 && d === today() && !currentBreak(d) && h.schedule_type !== 'x_per_week' && new Date().getHours() >= 18;
   const pct = n => Math.round(Math.min(1, n / h.target_count) * 100), pc = h.kind === 'count' ? pct(c) : 0, pp = just && view.justFrom != null ? pct(view.justFrom) : pc;
   const label = `${h.name}: ${done ? 'done' : h.kind === 'count' ? `${c} of ${h.target_count}, tap to add one` : 'not done, tap to tick'}`;
   return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}" data-hint="${h.kind === 'count' ? 'Tap to add one' : 'Tap to tick it off'}">
@@ -103,7 +103,7 @@ export function render() {
     </section>
     <div class="sheet-top">
       ${weekStrip(d)}
-      ${isToday ? missedYesterday() || recap() : ''}
+      ${isToday && currentBreak() ? breakCard(currentBreak()) : isToday ? missedYesterday() || recap() : ''}
       ${!editable(d) ? `<p class="note">${I.lock}<span>Days more than a week ago are locked, so streaks stay honest.</span></p>` : ''}
       ${!hs.length ? `<div class="empty"><h2 class="display">Start with <em>one</em> habit.</h2>
           <p class="muted">Small and daily beats big and rare. Add as many as you like, free, always.</p>
@@ -124,6 +124,11 @@ function missedYesterday() {
   if (!open.length) return '';
   return `<button class="note yday" data-a="pickDay" data-d="${y}">${I.left}<span>${open.length === 1 ? `<b>${esc(open[0].name)}</b> isn’t ticked for yesterday.` : `${open.length} habits aren’t ticked for yesterday.`} Did you do ${open.length === 1 ? 'it' : 'them'}? Tap to fill in.</span></button>`;
 }
+
+// On a break: say so, and offer the way back.
+const breakCard = b => `<aside class="break-card"><span class="bk-ic" aria-hidden="true">🌴</span>
+    <div class="grow"><b>Break until ${new Date(b.end_date + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</b><span class="muted small">Streaks are paused. Anything you tick still counts.</span></div>
+    <button class="btn sm" data-a="endBreak">I’m back</button></aside>`;
 
 // Brand new: nothing ticked ever. The first circle pulses with a small "tap to tick" hint.
 const firstRun = () => !Object.values(state.checkins).some(days => Object.values(days).some(n => n > 0));

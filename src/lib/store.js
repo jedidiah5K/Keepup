@@ -13,6 +13,7 @@ export const state = {
   habits: [],          // see keepup_habits columns
   checkins: {},        // { habitId: { 'YYYY-MM-DD': count } }
   pending: [],         // [{ op: 'upsert'|'delete', table, row }]
+  breaks: [],          // [{ id, start_date, end_date }]: holidays and sick days, streaks paused
   squad: null,         // filled from the server
   syncedUser: null,    // account this phone last uploaded everything to
 };
@@ -28,7 +29,7 @@ let saveT = null;
 // quiet: saved by the sync itself, so don't trigger another sync.
 export function save(quiet = false) {
   clearTimeout(saveT);
-  saveT = setTimeout(() => { try { localStorage.setItem(LS, JSON.stringify({ profile: state.profile, habits: state.habits, checkins: state.checkins, pending: state.pending, syncedUser: state.syncedUser })); } catch (e) {} }, 60);
+  saveT = setTimeout(() => { try { localStorage.setItem(LS, JSON.stringify({ profile: state.profile, habits: state.habits, checkins: state.checkins, pending: state.pending, syncedUser: state.syncedUser, breaks: state.breaks })); } catch (e) {} }, 60);
   if (!quiet) window.dispatchEvent(new Event('keepup:changed'));
 }
 
@@ -81,6 +82,22 @@ export function setCount(habitId, d, count) {
   else { delete m[d]; queue('delete', 'keepup_checkins', { habit_id: habitId, date: d }); }
   save();
   return true;
+}
+
+// A break starts today and lasts up to 30 days. Coming back early ends it yesterday, so today counts.
+export const BREAK_MAX = 30;
+export const currentBreak = (d = today()) => state.breaks.find(b => d >= b.start_date && d <= b.end_date) || null;
+export function startBreak(days = BREAK_MAX) {
+  const t = today(), row = { id: uid(), start_date: t, end_date: addDaysLocal(t, Math.min(BREAK_MAX, Math.max(1, days)) - 1) };
+  state.breaks = [...state.breaks.filter(b => b.end_date < t), row];
+  queue('upsert', 'keepup_breaks', row); save();
+  return row;
+}
+export function endBreak() {
+  const t = today(), b = currentBreak(t); if (!b) return;
+  if (b.start_date >= t) { state.breaks = state.breaks.filter(x => x.id !== b.id); queue('delete', 'keepup_breaks', { id: b.id }); }
+  else { b.end_date = addDaysLocal(t, -1); queue('upsert', 'keepup_breaks', { ...b }); }
+  save();
 }
 
 export function setProfile(patch) { Object.assign(state.profile, patch); queue('upsert', 'keepup_profiles', { ...state.profile }); save(); }

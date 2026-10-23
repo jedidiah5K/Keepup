@@ -27,8 +27,8 @@ function heatmap(h, weeks = 18) {
 
 function detail(h) {
   const t = today(), st = streakOf(h), c = state.checkins[h.id] || {}, start = h.start_date;
-  const wk = completion(h, c, [weekOf(t, state.profile.week_start), start].sort()[1], t);
-  const mo = completion(h, c, [monthStart(t), start].sort()[1], t);
+  const wk = completion(h, c, [weekOf(t, state.profile.week_start), start].sort()[1], t, state.breaks);
+  const mo = completion(h, c, [monthStart(t), start].sort()[1], t, state.breaks);
   const total = Object.values(c).filter(n => n >= h.target_count).length;
   return `<header class="top"><button class="back" data-a="statsBack">${I.left}Stats</button></header>
     <h1 class="h-title"><span aria-hidden="true">${esc(h.icon)}</span> ${esc(h.name)}</h1>
@@ -72,7 +72,7 @@ export function render() {
     ${hs.length ? overview(hs) : ''}
     ${!hs.length ? '<div class="card empty"><p class="muted">Add a habit and your stats show up here.</p></div>' : `<ul class="slist">${hs.map(h => {
       const st = streakOf(h), c = state.checkins[h.id] || {};
-      const wk = completion(h, c, [weekOf(t, state.profile.week_start), h.start_date].sort()[1], t);
+      const wk = completion(h, c, [weekOf(t, state.profile.week_start), h.start_date].sort()[1], t, state.breaks);
       return `<li><button class="srow" data-a="openStats" data-id="${h.id}" style="--hc:${COLOURS[h.colour]}">
         <span class="h-ic" aria-hidden="true">${esc(h.icon)}</span>
         <span class="h-txt"><span class="h-name">${esc(h.name)}</span><span class="muted small">${I.flame} ${st.current} now · best ${st.longest} ${unitOf(st, st.longest)}</span></span>

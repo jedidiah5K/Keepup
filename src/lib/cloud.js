@@ -71,6 +71,7 @@ async function flush() {
     let res;
     if (p.table === 'keepup_profiles') res = await sb.from('keepup_profiles').upsert(profileRow());
     else if (p.table === 'keepup_habits') res = p.op === 'delete' ? await sb.from('keepup_habits').delete().eq('id', p.row.id) : await sb.from('keepup_habits').upsert(pick(p.row, HABIT_COLS));
+    else if (p.table === 'keepup_breaks') res = p.op === 'delete' ? await sb.from('keepup_breaks').delete().eq('id', p.row.id) : await sb.from('keepup_breaks').upsert({ id: p.row.id, start_date: p.row.start_date, end_date: p.row.end_date });
     else if (p.table === 'keepup_checkins') res = p.op === 'delete'
       ? await sb.from('keepup_checkins').delete().eq('habit_id', p.row.habit_id).eq('date', p.row.date)
       : await sb.from('keepup_checkins').upsert({ habit_id: p.row.habit_id, date: p.row.date, count: p.row.count }, { onConflict: 'habit_id,date' });
@@ -92,7 +93,10 @@ async function pull() {
     const page = await must(sb.from('keepup_checkins').select('habit_id,date,count').eq('user_id', cloud.user.id).order('date').range(from, from + 999));
     rows.push(...page); if (page.length < 1000) break;
   }
+  // Breaks are newer than the rest of the database: if the table isn't there yet, keep this phone's.
+  const br = await sb.from('keepup_breaks').select('id,start_date,end_date').eq('user_id', cloud.user.id);
   if (state.pending.length) return false; // a change came in while we were downloading; next sync gets it
+  if (!br.error) state.breaks = br.data;
   // Someone who already set KeepUp up on another phone skips the first-run steps here.
   if (prof) Object.assign(state.profile, prof, { evening_reminder_at: prof.evening_reminder_at?.slice(0, 5) ?? null, onboarded: state.profile.onboarded || habits.length > 0 || !!prof.display_name });
   state.habits = habits.map(h => ({ ...h, reminder_time: h.reminder_time?.slice(0, 5) ?? null }));

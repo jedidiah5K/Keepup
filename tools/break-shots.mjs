@@ -1,0 +1,27 @@
+// Takes a break from Me, shows Today on a break, then comes back early.
+import { chromium } from 'playwright-core';
+import { spawn } from 'node:child_process';
+const server = spawn('npx', ['vite', 'preview', '--port', '4189', '--strictPort'], { stdio: 'ignore' });
+await new Promise(r => setTimeout(r, 2500));
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const page = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })).newPage();
+page.on('pageerror', e => console.log('ERR', e.message));
+await page.route('**/*.supabase.co/**', r => r.fulfill({ status: 503, body: '{}' }));
+await page.goto('http://localhost:4189/');
+await page.evaluate(() => { const b64 = o => btoa(JSON.stringify(o)).replace(/=+$/, ''); const user = { id: '00000000-0000-0000-0000-0000000000aa', email: 'a@x.com' };
+  localStorage.setItem('keepup-auth', JSON.stringify({ access_token: `${b64({ alg: 'HS256' })}.${b64({ sub: user.id, exp: 4102444800 })}.x`, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user }));
+  const day = n => { const t = new Date(); return new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate() - n)).toISOString().slice(0, 10); };
+  const a = {}; for (let n = 1; n < 30; n++) a[day(n)] = 1;
+  localStorage.setItem('keepup:v1', JSON.stringify({ profile: { display_name: 'Alex', onboarded: true, theme: 'paper' }, syncedUser: user.id, habits: [{ id: 'a', name: 'Meditate', icon: '🧘', colour: 'mint', kind: 'yes_no', target_count: 1, schedule_type: 'daily', schedule_days: [], start_date: day(60), archived_at: null, sort_order: 0 }], checkins: { a }, pending: [] })); });
+await page.reload(); await page.waitForTimeout(1500);
+await page.click('[data-tab="me"]'); await page.waitForTimeout(700);
+await page.click('[data-a="takeBreak"]'); await page.waitForTimeout(900);
+await page.screenshot({ path: 'shots/30-break-sheet.png' });
+await page.click('[data-n="7"]'); await page.waitForTimeout(600);
+await page.click('[data-tab="today"]'); await page.waitForTimeout(1200);
+await page.evaluate(() => { document.getElementById('screen').scrollTop = 330; }); await page.waitForTimeout(500);
+await page.screenshot({ path: 'shots/31-on-break.png' });
+console.log(await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('keepup:v1')).breaks)));
+await page.click('[data-a="endBreak"]'); await page.waitForTimeout(600);
+console.log(await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('keepup:v1')).breaks)), await page.evaluate(() => !!document.querySelector('.break-card')));
+await b.close(); server.kill();
