@@ -1,6 +1,6 @@
 // Sign in / create account, in a bottom sheet. Email + password, and no emails are sent;
 // Google and Apple sign-in come with the phone apps.
-import { signIn, signUp, resetPassword, setPassword, signOut } from '../lib/cloud.js';
+import { signIn, signUp, resetPassword, setPassword, signOut, deleteAccount } from '../lib/cloud.js';
 import { state } from '../lib/store.js';
 import { esc, openSheet, closeSheet, toast, confirmSheet } from '../ui/sheets.js';
 
@@ -85,4 +85,30 @@ function friendly(e) {
 export async function confirmSignOut() {
   const unsent = state.pending.length > 0;
   if (await confirmSheet('Sign out?', unsent ? `${state.pending.length} change${state.pending.length > 1 ? 's haven’t' : ' hasn’t'} reached your account yet. Go online first, or they’ll be lost.` : 'Your habits stay safe in your account. This phone’s copy is cleared.', 'Sign out', unsent)) signOut();
+}
+
+// Deleting is for good, so the person types DELETE first.
+export function openDeleteAccount() {
+  const sh = openSheet(`<h2 class="sheet-h serif-h">Delete your <em>account?</em></h2>
+    <p class="muted">Your habits, streaks and check-ins are erased from our servers and this phone. If you own a squad, it passes to the next friend. This can’t be undone.</p>
+    <p class="muted small">Want a copy first? Use Export in Me before you go.</p>
+    <form class="auth" novalidate>
+      <label class="fld"><span>Type DELETE to confirm</span><input name="c" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <p class="auth-err" role="alert"></p>
+      <div class="row gap"><button type="button" class="btn ghost grow" data-a="closeSheet">Keep it</button><button class="btn danger grow" type="submit" disabled>Delete for good</button></div>
+    </form>`, {
+    label: 'Delete account',
+    mount(b) {
+      const f = b.querySelector('form'), btn = f.querySelector('[type=submit]'), err = f.querySelector('.auth-err');
+      f.c.addEventListener('input', () => { btn.disabled = f.c.value.trim().toUpperCase() !== 'DELETE'; });
+      f.addEventListener('submit', async e => {
+        e.preventDefault(); if (btn.disabled) return;
+        if (!navigator.onLine) { err.textContent = 'You’re offline. Connect to the internet to delete your account.'; return; }
+        btn.disabled = true; btn.classList.add('busy'); err.textContent = '';
+        try { await deleteAccount(); }
+        catch (x) { btn.disabled = false; btn.classList.remove('busy'); err.textContent = /function|schema cache/i.test(x.message || '') ? 'Deleting isn’t switched on yet. Try again later.' : friendly(x); }
+      });
+    },
+  });
+  return sh;
 }

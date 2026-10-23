@@ -11,6 +11,7 @@ async function must(q) { const { data, error } = await q; if (error) throw error
 
 export async function loadSquad() {
   if (!cloud.user || SQ.loading) return;
+  if (!navigator.onLine) { Object.assign(SQ, { error: 'You’re offline. Your squad shows up when you’re back online.', loaded: true, at: Date.now() }); changed(); return; }
   SQ.loading = true; SQ.error = null; changed();
   try {
     const me = cloud.user.id, t = today();
@@ -43,7 +44,7 @@ export async function loadSquad() {
     SQ.members = [...byUser.values()].sort((a, b) => (a.id === me ? -1 : b.id === me ? 1 : a.joined.localeCompare(b.joined)));
     SQ.nudgedByMe = new Set(nudges.filter(n => n.from_user === me).map(n => n.to_user));
     SQ.nudgedMe = nudges.filter(n => n.to_user === me).map(n => byUser.get(n.from_user)?.name).filter(Boolean);
-  } catch (e) { SQ.error = e.message || String(e); }
+  } catch (e) { SQ.error = !navigator.onLine || /fetch|network/i.test(e?.message || '') ? 'You’re offline. Your squad shows up when you’re back online.' : 'Couldn’t load your squad just now.'; }
   finally { SQ.loading = false; SQ.loaded = true; SQ.at = Date.now(); changed(); }
 }
 
@@ -77,3 +78,4 @@ export async function setShared(ids) {
   if (del.length) { const { error } = await sb.from('keepup_squad_shared_habits').delete().eq('squad_id', SQ.squad.id).in('habit_id', del); if (error) err(error); }
   await loadSquad();
 }
+addEventListener('online', () => { if (SQ.error) loadSquad(); });

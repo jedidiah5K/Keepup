@@ -42,6 +42,7 @@ export function render() {
       <button class="row-set" data-a="export" data-f="json"><span>Export as JSON</span>${I.right}</button>
       <a class="row-set" href="/privacy.html"><span>Privacy policy</span>${I.right}</a>
       <a class="row-set" href="/terms.html"><span>Terms</span>${I.right}</a>
+      ${cloud.user ? `<button class="row-set danger-t" data-a="deleteAccount"><span>Delete account</span>${I.right}</button>` : ''}
     </section>
     <p class="beta-note"><span class="beta-tag">Beta</span><span>KeepUp is in beta, so <b>everything is free for now</b>. Unlimited habits, streaks and squads stay free forever. Some extras (like more looks) may become Pro later, and we’ll always ask first.</span></p>
     <p class="muted small center mt3">KeepUp · made for people who keep going</p>`;

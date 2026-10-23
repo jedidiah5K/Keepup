@@ -102,6 +102,15 @@ const ACTIONS = {
   undoTick: el => { setCount(el.dataset.id, el.dataset.d, +el.dataset.c); document.querySelector('.toast')?.remove(); render(); },
   newHabit: () => openHabitForm(null, render),
   editHabit: el => openHabitForm(el.dataset.id, render),
+  shareStreak: async el => {
+    const h = habitById(el.dataset.id); if (!h) return;
+    el.disabled = true; el.classList.add('busy');
+    try {
+      const [{ shareStreak }, { streakOf }] = await Promise.all([import('./ui/share.js'), import('./screens/today.js')]);
+      if (await shareStreak(h, streakOf(h)) === 'saved') toast('Streak card saved to your downloads.');
+    } catch (e) { toast('Couldn’t make the card. Try again.'); }
+    finally { el.disabled = false; el.classList.remove('busy'); }
+  },
   habitMenu: el => habitMenu(el.dataset.id),
   openStats: el => swap(() => { Stats.view.habit = el.dataset.id; render.last = null; render(); document.getElementById('screen').scrollTop = 0; }),
   statsBack: () => swap(() => { Stats.view.habit = null; render.last = null; render(); }),
@@ -109,6 +118,7 @@ const ACTIONS = {
   ...Squad.ACTIONS,
   auth: async el => (await account()).openAuth(el.dataset.mode),
   signOut: async () => (await account()).confirmSignOut(),
+  deleteAccount: async () => (await account()).openDeleteAccount(),
   syncNow: async () => (await loadCloud()).sync(),
   install: () => install(),
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },

@@ -40,7 +40,7 @@ function detail(h) {
     </div>
     <section class="card"><div class="card-h"><span class="eyebrow">Last 18 weeks</span><span class="muted small">${total} check-ins all time</span></div>${heatmap(h)}</section>
     <p class="muted small">Streak freeze: each habit gets 1 a week, used for you on a missed day so one bad day doesn't wipe your streak.</p>
-    <button class="btn ghost wide" data-a="editHabit" data-id="${h.id}">Edit habit</button>`;
+    <div class="row gap"><button class="btn grow" data-a="shareStreak" data-id="${h.id}">${I.share} Share streak</button><button class="btn ghost grow" data-a="editHabit" data-id="${h.id}">Edit habit</button></div>`;
 }
 
 export function render() {

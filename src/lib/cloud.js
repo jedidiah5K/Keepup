@@ -113,3 +113,12 @@ export async function signOut() {
   try { localStorage.removeItem('keepup:v1'); } catch (e) {}
   location.reload();
 }
+
+// Removes the account and everything in it on the server, then this phone's copy.
+export async function deleteAccount() {
+  const { error } = await sb.rpc('keepup_delete_account');
+  if (error) throw error;
+  await sb.auth.signOut({ scope: 'local' });
+  try { localStorage.removeItem('keepup:v1'); localStorage.removeItem('keepup-auth'); } catch (e) {}
+  location.reload();
+}
