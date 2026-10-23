@@ -88,6 +88,7 @@ export const SOUNDS = {
   plus: () => tones([[880, 0, .07]], 'triangle', .14),                      // +1 on a count habit
   undo: () => tones([[520, 0, .08], [390, .06, .12]], 'sine', .14),
   allDone: () => tones([[523, 0], [659, .08], [784, .16], [1047, .26, .5], [1319, .26, .5]], 'triangle', .2),
+  five: () => play(() => { Sound.mallet(1046.5, 0, .2, .35); Sound.mallet(1567.98, .07, .16, .6); }),
   nudge: () => tones([[784, 0, .1], [784, .14, .1]], 'square', .06),
 };
 

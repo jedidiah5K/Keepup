@@ -696,3 +696,12 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 
 /* Notifications row */
 .pill-on { font: 600 .6rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: .3rem .45rem; border-radius: 6px; background: #15744A; color: #fff; }
+
+/* High fives */
+.chip.five { color: color-mix(in srgb, var(--done) 70%, var(--ink)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--done) 50%, transparent); }
+.chip.five.slap svg { animation: slap .5s var(--spring) both; }
+.m-state.ok svg { animation: pop .45s var(--spring) both; }
+.nudged.fived { background: color-mix(in srgb, var(--done) 12%, var(--bg)); }
+.nudged.fived svg { color: var(--done); animation: slap .7s var(--spring) .4s both; }
+@keyframes slap { 0% { transform: rotate(0) scale(1); } 40% { transform: rotate(-18deg) scale(1.3); } 100% { transform: rotate(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .chip.five.slap svg, .nudged.fived svg, .m-state.ok svg { animation: none; } }

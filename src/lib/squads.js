@@ -5,7 +5,7 @@ import { state, today } from './store.js';
 import { addDays } from './dates.js';
 import { squadStreak } from './streaks.js';
 
-export const SQ = { loaded: false, loading: false, error: null, squad: null, members: [], mine: new Set(), nudgedByMe: new Set(), nudgedMe: [] };
+export const SQ = { loaded: false, loading: false, error: null, squad: null, members: [], mine: new Set(), nudgedByMe: new Set(), nudgedMe: [], fivedByMe: new Set(), fivedMe: [] };
 const changed = () => dispatchEvent(new Event('keepup:squad'));
 async function must(q) { const { data, error } = await q; if (error) throw error; return data; }
 
@@ -22,7 +22,7 @@ export async function loadSquad() {
       must(sb.from('keepup_squad_members').select('user_id, role, joined_at').eq('squad_id', sq.id)),
       must(sb.rpc('keepup_squad_board', { sq: sq.id, since: addDays(t, -60) })),
       must(sb.from('keepup_squad_shared_habits').select('habit_id').eq('squad_id', sq.id)),
-      must(sb.from('keepup_nudges').select('from_user, to_user, date').eq('squad_id', sq.id).eq('date', t)),
+      must(sb.from('keepup_nudges').select('from_user, to_user, date, kind').eq('squad_id', sq.id).eq('date', t)),
     ]);
     const byUser = new Map(mem.map(m => [m.user_id, { id: m.user_id, role: m.role, joined: m.joined_at.slice(0, 10), name: '', habits: new Map(), done: new Set() }]));
     for (const r of board) {
@@ -42,8 +42,12 @@ export async function loadSquad() {
     if (meU) { meU.done = new Set([...meU.done].filter(d => d !== t)); for (const id of SQ.mine) { const h = state.habits.find(x => x.id === id); if (h && (state.checkins[id]?.[t] || 0) >= h.target_count) meU.done.add(t); } }
     SQ.squad = sq;
     SQ.members = [...byUser.values()].sort((a, b) => (a.id === me ? -1 : b.id === me ? 1 : a.joined.localeCompare(b.joined)));
-    SQ.nudgedByMe = new Set(nudges.filter(n => n.from_user === me).map(n => n.to_user));
-    SQ.nudgedMe = nudges.filter(n => n.to_user === me).map(n => byUser.get(n.from_user)?.name).filter(Boolean);
+    // Before the high-five update is in the database, rows have no kind: they're all nudges.
+    const of = k => nudges.filter(n => (n.kind || 'nudge') === k);
+    SQ.nudgedByMe = new Set(of('nudge').filter(n => n.from_user === me).map(n => n.to_user));
+    SQ.nudgedMe = of('nudge').filter(n => n.to_user === me).map(n => byUser.get(n.from_user)?.name).filter(Boolean);
+    SQ.fivedByMe = new Set(of('five').filter(n => n.from_user === me).map(n => n.to_user));
+    SQ.fivedMe = of('five').filter(n => n.to_user === me).map(n => byUser.get(n.from_user)?.name).filter(Boolean);
   } catch (e) { SQ.error = !navigator.onLine || /fetch|network/i.test(e?.message || '') ? 'You’re offline. Your squad shows up when you’re back online.' : 'Couldn’t load your squad just now.'; }
   finally { SQ.loading = false; SQ.loaded = true; SQ.at = Date.now(); if (!SQ.error) try { localStorage.setItem('keepup:insquad', SQ.squad ? '1' : ''); } catch (e) {} changed(); }
 }
@@ -69,6 +73,11 @@ export async function nudge(id) {
   const { error } = await sb.rpc('keepup_nudge', { sq: SQ.squad.id, friend: id, local_day: today() });
   if (error && !/already/i.test(error.message)) err(error);
   SQ.nudgedByMe.add(id); changed();
+}
+export async function highFive(id) {
+  const { error } = await sb.rpc('keepup_high_five', { sq: SQ.squad.id, friend: id, local_day: today() });
+  if (error && !/already/i.test(error.message)) err(error);
+  SQ.fivedByMe.add(id); changed();
 }
 // Pick which of my habits the squad can see. Habits must be synced first (they live on the server).
 export async function setShared(ids) {

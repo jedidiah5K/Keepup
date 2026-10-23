@@ -3,6 +3,25 @@
 -- keepup_due_reminders() what is due right now and sends it to each phone in keepup_push_tokens.
 -- A reminder is only due if the habit isn't done yet today and the person isn't on a break,
 -- and each one is sent at most once a day (keepup_push_sent remembers).
+-- High fives: like a nudge, but for a friend who got everything done today. Same table, own kind.
+alter table public.keepup_nudges add column if not exists kind text not null default 'nudge' check (kind in ('nudge', 'five'));
+alter table public.keepup_nudges drop constraint if exists keepup_nudges_from_user_to_user_date_key;
+create unique index if not exists keepup_nudges_once on public.keepup_nudges (from_user, to_user, date, kind);
+create index if not exists keepup_nudges_recent on public.keepup_nudges (to_user, created_at);
+
+create or replace function public.keepup_high_five(sq uuid, friend uuid, local_day date) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if friend = auth.uid() then raise exception 'You can’t high-five yourself.'; end if;
+  if not exists (select 1 from keepup_squad_members a join keepup_squad_members b on a.squad_id = b.squad_id
+                 where a.squad_id = sq and a.user_id = auth.uid() and b.user_id = friend) then raise exception 'Not in this squad.'; end if;
+  if abs(local_day - current_date) > 1 then raise exception 'Bad date'; end if;
+  insert into keepup_nudges (squad_id, from_user, to_user, date, kind) values (sq, auth.uid(), friend, local_day, 'five');
+exception when unique_violation then raise exception 'You already high-fived them today.';
+end $$;
+revoke all on function public.keepup_high_five(uuid, uuid, date) from public, anon;
+grant execute on function public.keepup_high_five(uuid, uuid, date) to authenticated;
+
 create table if not exists public.keepup_push_sent (
   user_id uuid not null references public.keepup_profiles (id) on delete cascade,
   what text not null,                 -- a habit id, or 'evening'
@@ -51,6 +70,14 @@ language sql security definer set search_path = public as $$
     cross join lateral (select count(*) as left_ from open_habits o where o.uid = pp.id and o.schedule_type <> 'x_per_week') n
     where pp.evening_reminder_at is not null and n.left_ > 0
       and pp.d + pp.evening_reminder_at > pp.local_now - lookback and pp.d + pp.evening_reminder_at <= pp.local_now
+    union all
+    -- Nudges and high fives from the squad, sent on as they come in.
+    select pp.id, 'n' || x.id, pp.d,
+           coalesce(nullif(f.display_name, ''), 'A friend') || case when x.kind = 'five' then ' high-fived you' else ' nudged you' end,
+           case when x.kind = 'five' then 'For getting everything done today.' else 'Still time to tick off today’s habits.' end,
+           x.kind || '-' || x.from_user
+    from people pp join keepup_nudges x on x.to_user = pp.id and x.created_at > now() - lookback
+    join keepup_profiles f on f.id = x.from_user
   ),
   claimed as (
     insert into keepup_push_sent (user_id, what, day)

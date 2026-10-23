@@ -48,6 +48,7 @@ function board(SQ) {
   const alone = ms.length < 2;
   return `<header class="top"><div><div class="eyebrow">Squad · ${ms.length} of 5</div><h1>${esc(sq.name)}</h1></div>
       <button class="icon-btn" data-a="sqMenu" aria-label="Squad options">${I.more}</button></header>
+    ${SQ.fivedMe.length ? `<p class="nudged fived">${I.five}<span><b>${esc(SQ.fivedMe.join(' & '))}</b> high-fived you today.</span></p>` : ''}
     ${SQ.nudgedMe.length ? `<p class="nudged">${I.wave}<span><b>${esc(SQ.nudgedMe.join(' & '))}</b> nudged you today.</span></p>` : ''}
     <section class="sq-hero">
       <div class="sq-streak"><span class="sq-n" data-count="${st.current}">${st.current}</span><span class="sq-unit">day${st.current === 1 ? '' : 's'}<br><em>together</em></span></div>
@@ -70,9 +71,10 @@ function memberRow(m, t, days, me) {
     ${face(m, 'lg')}
     <div class="grow"><b>${esc(m.name)}${isMe ? ' <span class="muted small">(you)</span>' : ''}${m.role === 'owner' ? ' <span class="owner-tag">Owner</span>' : ''}</b>
       <span class="m-habits">${habits.length ? habits.map(h => `<i class="${(h.counts[t] || 0) >= h.target ? 'y' : ''}" title="${esc(h.name)}">${hi(h.icon)}</i>`).join('') : '<span class="muted small">No shared habits yet</span>'}</span>
-      <span class="m-week" aria-label="Last 7 days">${days.map(d => `<i class="${m.done.has(d) ? 'y' : ''} ${d < m.joined ? 'pre' : ''}"></i>`).join('')}</span></div>
+      <span class="m-week" role="img" aria-label="Last 7 days: ${days.filter(d => m.done.has(d)).length} of 7 done">${days.map(d => `<i class="${m.done.has(d) ? 'y' : ''} ${d < m.joined ? 'pre' : ''}"></i>`).join('')}</span></div>
     ${isMe ? `<span class="m-state">${done ? 'Done' : `${doneN}/${habits.length}`}</span>`
-      : done ? `<span class="m-state ok">${I.check}</span>`
+      : done && mod.SQ.fivedByMe.has(m.id) ? `<span class="m-state ok" title="High-fived">${I.five}</span>`
+      : done ? `<button class="chip five" data-a="sqFive" data-id="${m.id}" aria-label="High five ${esc(m.name)}">${I.five} High five</button>`
       : mod.SQ.nudgedByMe.has(m.id) ? '<span class="m-state muted small">Nudged</span>'
       : `<button class="chip" data-a="sqNudge" data-id="${m.id}">${I.wave} Nudge</button>`}
   </li>`;
@@ -132,6 +134,11 @@ export const ACTIONS = {
   sqNudge: async el => {
     el.disabled = true; el.classList.add('sent');
     try { await (await squads()).nudge(el.dataset.id); buzz([10, 40, 10]); toast('Nudge sent.'); } catch (x) { el.disabled = false; fail(x); }
+  },
+  sqFive: async el => {
+    el.disabled = true; el.classList.add('slap'); SOUNDS.five(); buzz([18, 30, 12]);
+    confetti(14);
+    try { await (await squads()).highFive(el.dataset.id); } catch (x) { el.disabled = false; el.classList.remove('slap'); fail(x); }
   },
   sqShare: async () => {
     const m = await squads(), hs = activeHabits(), on = new Set(m.SQ.mine);
