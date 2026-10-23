@@ -59,12 +59,14 @@ function habitRow(h, d, i) {
   const frozenNow = st.frozen.length && st.frozen[st.frozen.length - 1] >= addDays(d, -6);
   const unit = st.unit === 'weeks' ? (st.current === 1 ? 'wk' : 'wks') : (st.current === 1 ? 'day' : 'days');
   const sub = h.schedule_type === 'x_per_week' ? `${st.weekDone} of ${st.weekTarget} this week` : h.kind === 'count' ? `${c} of ${h.target_count}` : h.schedule_type === 'weekdays' ? 'Some days' : 'Every day';
+  // Lost a streak? Most people quit right here. Say something kind and keep their best on show.
+  const comeback = !st.current && st.longest >= 3 && h.schedule_type !== 'x_per_week' && !c;
   const pct = n => Math.round(Math.min(1, n / h.target_count) * 100), pc = h.kind === 'count' ? pct(c) : 0, pp = just && view.justFrom != null ? pct(view.justFrom) : pc;
   const label = `${h.name}: ${done ? 'done' : h.kind === 'count' ? `${c} of ${h.target_count}, tap to add one` : 'not done, tap to tick'}`;
   return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}">
     <button class="h-main" data-a="habitMenu" data-id="${h.id}" aria-label="${esc(h.name)} options">
       <span class="h-ic" aria-hidden="true">${esc(h.icon)}</span>
-      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta">${esc(sub)}</span></span>
+      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta">${comeback ? `Fresh start · best ${st.longest}` : esc(sub)}</span></span>
     </button>
     <span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>
     <button class="tick ${h.kind === 'count' ? 'count' : ''}" data-a="tick" data-id="${h.id}" data-d="${d}" aria-label="${esc(label)}" aria-pressed="${done}" ${lock ? 'disabled' : ''} style="--pc:${pc};--pp:${pp}">
