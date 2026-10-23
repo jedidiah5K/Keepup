@@ -386,9 +386,10 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .squad-empty { text-align: left; padding: 0; }
 .squad-empty h2 { font-size: 2.4rem; margin: 1.25rem 0 .6rem; }
 .faces { display: flex; }
-.faces span { width: 3.4rem; height: 3.4rem; border-radius: 50%; display: grid; place-items: center; font-size: 1.5rem; background: var(--surface); box-shadow: 0 0 0 3px var(--bg); margin-right: -.7rem; animation: hop 2.8s var(--spring) infinite; }
+.faces span { width: 3.4rem; height: 3.4rem; border-radius: 50%; display: grid; place-items: center; font: 600 .78rem/1 var(--mono); letter-spacing: .02em; color: #fff; background: var(--fc, var(--surface)); box-shadow: 0 0 0 3px var(--bg); margin-right: -.7rem; animation: hop 2.8s var(--spring) infinite; }
 .faces span:nth-child(2) { animation-delay: .15s; } .faces span:nth-child(3) { animation-delay: .3s; }
-.faces span:last-child { background: var(--accent); color: var(--accent-ink); font-weight: 700; animation-delay: .45s; }
+.faces span.plus { background: var(--ink); color: var(--bg); animation-delay: .45s; }
+.faces span.plus svg { width: 1.3rem; height: 1.3rem; }
 @keyframes hop { 0%, 70%, 100% { transform: none; } 80% { transform: translateY(-7px); } }
 .ticks { list-style: none; padding: 0; margin: 1.5rem 0 0; border-top: 1px solid var(--line); }
 .ticks li { display: flex; gap: .8rem; align-items: center; padding: .9rem 0; border-bottom: 1px solid var(--line); }
@@ -435,7 +436,7 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .btn.busy::after { content: ''; position: absolute; inset: 0; margin: auto; width: 1.1rem; height: 1.1rem; border-radius: 50%; border: 2px solid var(--bg); border-right-color: transparent; animation: spin .7s linear infinite; }
 @keyframes spin { to { rotate: 1turn; } }
 .sent { text-align: center; padding: .5rem 0; }
-.sent-ic { font-size: 2.4rem; animation: pop .6s var(--spring) both; margin-bottom: .6rem; }
+.sent-ic { color: var(--accent); animation: pop .6s var(--spring) both; margin-bottom: .6rem; }
 .sync-line { display: flex; align-items: center; gap: .4rem; }
 .sync-line::before { content: ''; width: .45rem; height: .45rem; border-radius: 50%; background: var(--done); }
 .sync-line.warn::before { background: var(--danger); }
@@ -481,7 +482,7 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .member { display: flex; align-items: center; gap: .85rem; padding: .95rem 0; border-bottom: 1px solid var(--line); animation: lift .6s var(--out) both; }
 .member .grow { display: grid; gap: .3rem; min-width: 0; }
 .member b { font-weight: 600; }
-.crown { color: var(--sun, #F2B705); font-size: .85rem; }
+.owner-tag { font: 500 .58rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: .2rem .35rem; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--muted); vertical-align: 2px; margin-left: .2rem; }
 .m-habits { display: flex; gap: .3rem; flex-wrap: wrap; }
 .m-habits i { font-style: normal; font-size: 1rem; opacity: .3; filter: grayscale(1); transition: all .3s; }
 .m-habits i.y { opacity: 1; filter: none; }
@@ -564,7 +565,6 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 
 /* Last week's recap, on the first days of a new week */
 .recap { position: relative; margin: 0 0 1.25rem; padding: 1rem 1.1rem 1.05rem; border-radius: 22px; background: var(--ink); color: var(--bg); animation: lift .7s var(--out) both .25s; transition: opacity .25s, transform .25s var(--out); overflow: hidden; }
-.recap::after { content: ''; position: absolute; right: -30px; bottom: -40px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--accent) 55%, transparent), transparent 70%); pointer-events: none; }
 .recap .eyebrow { color: color-mix(in oklab, var(--bg) 60%, transparent); }
 .recap-top { display: flex; justify-content: space-between; align-items: center; }
 .recap .x { color: inherit; opacity: .6; }
@@ -598,9 +598,6 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .break-card { display: flex; align-items: center; gap: .8rem; padding: .85rem .9rem; margin: 0 0 1.25rem; border-radius: 22px; background: color-mix(in oklab, var(--done) 12%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--done) 25%, transparent); animation: lift .6s var(--out) both .2s; }
 .break-card .grow { display: grid; gap: .2rem; min-width: 0; }
 .break-card b { font: italic 400 1.15rem/1.1 var(--serif); }
-.bk-ic { font-size: 1.6rem; animation: sway 3s ease-in-out infinite; transform-origin: 50% 90%; }
-@keyframes sway { 50% { rotate: 8deg; } }
-@media (prefers-reduced-motion: reduce) { .bk-ic { animation: none; } }
 
 /* Intro cards: swipe through three, with a small live demo on the sky */
 .welcome .ob-body { padding: 0; }
@@ -664,3 +661,21 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .trophy-pop.out { opacity: 0; transform: translateY(12px); transition: .35s var(--out); }
 @keyframes popUp { from { opacity: 0; transform: translateY(30px) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .trophy, .trophy-pop, .trophy-pop .medal, .trophy-sheet .medal.on { animation: none; } }
+
+.sent-ic svg { width: 2.6rem; height: 2.6rem; }
+.nudged { display: flex; gap: .55rem; align-items: center; }
+.nudged svg { width: 20px; height: 20px; color: var(--accent); flex: none; transform-origin: 70% 80%; animation: waveHand 1.6s ease-in-out 2 .4s; }
+@keyframes waveHand { 0%, 100% { rotate: 0deg; } 20%, 60% { rotate: -14deg; } 40%, 80% { rotate: 10deg; } }
+.chip svg { width: 16px; height: 16px; vertical-align: -3px; }
+.bk-ic { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: color-mix(in oklab, var(--done) 18%, transparent); color: var(--done); }
+.bk-ic svg { width: 22px; height: 22px; }
+
+/* Loading: a quiet outline of the squad board instead of a spinner */
+.skel i { display: block; border-radius: 12px; background: linear-gradient(90deg, var(--surface-2) 0 40%, color-mix(in oklab, var(--surface-2) 50%, var(--bg)) 50%, var(--surface-2) 60% 100%); background-size: 300% 100%; animation: shimmer 1.6s linear infinite; }
+.sk-hero { height: 9rem; margin: .5rem 0 1.5rem; border-radius: 22px !important; }
+.sk-row { display: flex; gap: .9rem; align-items: center; padding: .9rem 0; border-bottom: 1px solid var(--line); }
+.sk-row .sk-face { width: 2.9rem; height: 2.9rem; border-radius: 50%; flex: none; }
+.sk-row span { flex: 1; display: grid; gap: .45rem; }
+.sk-row span i { height: .8rem; width: 55%; } .sk-row span i + i { width: 35%; height: .6rem; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel i { animation: none; } }

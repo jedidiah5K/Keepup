@@ -18,7 +18,7 @@ const face = (m, size = '') => `<span class="face ${size}" style="--fc:${tint(m.
 
 const pitch = (cta) => `<header class="top"><div><div class="eyebrow">2–5 friends, free</div><h1>Your <em>squad</em></h1></div></header>
     <div class="squad-empty">
-      <div class="faces" aria-hidden="true"><span>🙂</span><span>😎</span><span>🤓</span><span>＋</span></div>
+      <div class="faces" aria-hidden="true"><span style="--fc:#FF5A1F">JO</span><span style="--fc:#7B4BC4">MA</span><span style="--fc:#1F9D7A">SAM</span><span class="plus">${I.plus}</span></div>
       <h2 class="display">Streaks are easier <em>together.</em></h2>
       <p class="muted">Make a squad, drop the link in your group chat, and pick which habits your friends can see. Everything else stays private.</p>
       <ul class="ticks">
@@ -33,7 +33,7 @@ export function render() {
   if (!cloud.user) return pitch(`<button class="btn wide mt3" data-a="auth" data-mode="up">Make a free account to start</button>
       <p class="muted small mt2 center">Already have one? <button class="link" data-a="auth" data-mode="in">Sign in</button></p>`);
   const SQ = mod?.SQ;
-  if (!SQ || !SQ.loaded) return `<header class="top"><div><div class="eyebrow">Squad</div><h1>Your <em>squad</em></h1></div></header><div class="sq-loading" role="status" aria-label="Loading"><i></i><i></i><i></i></div>`;
+  if (!SQ || !SQ.loaded) return `<header class="top"><div><div class="eyebrow">Squad</div><h1>Your <em>squad</em></h1></div></header><div class="skel" role="status" aria-label="Loading your squad"><i class="sk-hero"></i>${'<div class="sk-row"><i class="sk-face"></i><span><i></i><i></i></span></div>'.repeat(3)}</div>`;
   if (SQ.error && !SQ.squad) return pitch(`<p class="note">${esc(SQ.error)}</p><button class="btn wide mt3" data-a="sqReload">Try again</button>`);
   if (!SQ.squad) return pitch(`<div class="stack mt3"><button class="btn wide" data-a="sqCreate">Create a squad</button><button class="btn ghost wide" data-a="sqJoin">I have an invite link</button></div>`);
   return board(SQ);
@@ -47,7 +47,7 @@ function board(SQ) {
   const alone = ms.length < 2;
   return `<header class="top"><div><div class="eyebrow">Squad · ${ms.length} of 5</div><h1>${esc(sq.name)}</h1></div>
       <button class="icon-btn" data-a="sqMenu" aria-label="Squad options">${I.more}</button></header>
-    ${SQ.nudgedMe.length ? `<p class="nudged">👋 <b>${esc(SQ.nudgedMe.join(' & '))}</b> nudged you today.</p>` : ''}
+    ${SQ.nudgedMe.length ? `<p class="nudged">${I.wave}<span><b>${esc(SQ.nudgedMe.join(' & '))}</b> nudged you today.</span></p>` : ''}
     <section class="sq-hero">
       <div class="sq-streak"><span class="sq-n" data-count="${st.current}">${st.current}</span><span class="sq-unit">day${st.current === 1 ? '' : 's'}<br><em>together</em></span></div>
       <div class="rope" style="--n:${ms.length}" aria-label="${doneToday} of ${ms.length} done today">
@@ -67,13 +67,13 @@ function memberRow(m, t, days, me) {
   const doneN = habits.filter(h => (h.counts[t] || 0) >= h.target).length;
   return `<li class="member ${done ? 'done' : ''}">
     ${face(m, 'lg')}
-    <div class="grow"><b>${esc(m.name)}${isMe ? ' <span class="muted small">(you)</span>' : ''}${m.role === 'owner' ? ' <span class="crown" title="Owner">♛</span>' : ''}</b>
+    <div class="grow"><b>${esc(m.name)}${isMe ? ' <span class="muted small">(you)</span>' : ''}${m.role === 'owner' ? ' <span class="owner-tag">Owner</span>' : ''}</b>
       <span class="m-habits">${habits.length ? habits.map(h => `<i class="${(h.counts[t] || 0) >= h.target ? 'y' : ''}" title="${esc(h.name)}">${esc(h.icon)}</i>`).join('') : '<span class="muted small">No shared habits yet</span>'}</span>
       <span class="m-week" aria-label="Last 7 days">${days.map(d => `<i class="${m.done.has(d) ? 'y' : ''} ${d < m.joined ? 'pre' : ''}"></i>`).join('')}</span></div>
     ${isMe ? `<span class="m-state">${done ? 'Done' : `${doneN}/${habits.length}`}</span>`
       : done ? `<span class="m-state ok">${I.check}</span>`
       : mod.SQ.nudgedByMe.has(m.id) ? '<span class="m-state muted small">Nudged</span>'
-      : `<button class="chip" data-a="sqNudge" data-id="${m.id}">👋 Nudge</button>`}
+      : `<button class="chip" data-a="sqNudge" data-id="${m.id}">${I.wave} Nudge</button>`}
   </li>`;
 }
 
@@ -96,7 +96,8 @@ export function afterRender() {
 }
 
 // ---------- actions ----------
-const fail = e => toast(esc(e.message || 'Something went wrong. Try again.'));
+// Our own database messages are written for people; anything technical gets a plain sentence instead.
+const fail = e => { const m = e?.message || ''; toast(esc(!m || /jwt|permission|violates|pgrst|fetch|network|schema|function|column|relation|syntax/i.test(m) ? 'Couldn’t reach your squad just now. Check your internet and try again.' : m)); };
 
 export const ACTIONS = {
   sqReload: async () => (await squads()).loadSquad(),
@@ -129,7 +130,7 @@ export const ACTIONS = {
   },
   sqNudge: async el => {
     el.disabled = true; el.classList.add('sent');
-    try { await (await squads()).nudge(el.dataset.id); buzz([10, 40, 10]); toast('Nudge sent 👋'); } catch (x) { el.disabled = false; fail(x); }
+    try { await (await squads()).nudge(el.dataset.id); buzz([10, 40, 10]); toast('Nudge sent.'); } catch (x) { el.disabled = false; fail(x); }
   },
   sqShare: async () => {
     const m = await squads(), hs = activeHabits(), on = new Set(m.SQ.mine);
@@ -179,7 +180,7 @@ export async function openJoin(code) {
   if (!cloud.user) { pendingJoin.code = code; const a = await import('./account.js'); a.openAuth('up'); toast('Make a free account first, then you’ll join the squad.'); return; }
   const m = await squads();
   const parse = v => { const s = String(v || '').trim(); try { return new URL(s).searchParams.get('join') || s; } catch (e) { return s; } };
-  const body = (p, c) => p ? `<div class="join-preview"><div class="faces sm" aria-hidden="true">${'<span>🙂</span>'.repeat(Math.min(p.members, 4))}</div>
+  const body = (p, c) => p ? `<div class="join-preview"><div class="faces sm" aria-hidden="true">${['#FF5A1F', '#7B4BC4', '#1F9D7A', '#1E6FD9'].slice(0, Math.min(p.members, 4)).map(c => `<span style="--fc:${c}"></span>`).join('')}</div>
         <h2 class="sheet-h">Join <em>${esc(p.name)}</em>?</h2><p class="muted">${p.members} ${p.members === 1 ? 'person' : 'people'} in it. You choose which habits they see.</p>
         ${p.full_squad ? '<p class="note">This squad is full (5 max).</p>' : `<button class="btn wide mt3" data-join="${esc(c)}">Join squad</button>`}</div>`
     : `<h2 class="sheet-h">Join a <em>squad</em></h2><form class="sq-form"><label class="fld"><span>Invite link</span><input name="c" placeholder="Paste the link here" autofocus></label>

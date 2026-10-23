@@ -35,7 +35,7 @@ export function render() {
     </section>
     <section class="group"><div class="g-h">Habits</div>
       <label class="row-set"><span>Week starts on</span><select class="in-right" data-a="weekstart"><option value="1" ${p.week_start === 1 ? 'selected' : ''}>Monday</option><option value="7" ${p.week_start === 7 ? 'selected' : ''}>Sunday</option></select></label>
-      ${(b => b ? `<button class="row-set" data-a="endBreak"><span><span>On a break 🌴</span><span class="muted small">Until ${esc(new Date(b.end_date + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}. Tap to come back early.</span></span>${I.right}</button>`
+      ${(b => b ? `<button class="row-set" data-a="endBreak"><span><span>On a break</span><span class="muted small">Until ${esc(new Date(b.end_date + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}. Tap to come back early.</span></span>${I.right}</button>`
         : `<button class="row-set" data-a="takeBreak"><span><span>Take a break</span><span class="muted small">Holiday or sick? Pause every streak for up to 30 days.</span></span>${I.right}</button>`)(currentBreak())}
       <button class="row-set" data-a="manage"><span>Manage habits</span><span class="muted">${activeHabits().length}${archivedHabits().length ? ` · ${archivedHabits().length} archived` : ''} ${I.right}</span></button>
     </section>

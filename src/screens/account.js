@@ -2,6 +2,7 @@
 // Google and Apple sign-in come with the phone apps.
 import { signIn, signUp, resetPassword, setPassword, signOut, deleteAccount } from '../lib/cloud.js';
 import { state } from '../lib/store.js';
+import { I } from '../ui/icons.js';
 import { esc, openSheet, closeSheet, toast, confirmSheet } from '../ui/sheets.js';
 
 const EYE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg>';
@@ -68,7 +69,7 @@ export function openAuth(mode = 'up') {
   });
   return sh;
 }
-const sent = (h, p) => `<div class="sent"><div class="sent-ic" aria-hidden="true">✉️</div><h2 class="sheet-h serif-h">${h}</h2><p class="muted">${p}</p><button class="btn ghost wide mt3" data-a="closeSheet">Done</button></div>`;
+const sent = (h, p) => `<div class="sent"><div class="sent-ic" aria-hidden="true">${I.mail}</div><h2 class="sheet-h serif-h">${h}</h2><p class="muted">${p}</p><button class="btn ghost wide mt3" data-a="closeSheet">Done</button></div>`;
 
 // Supabase's messages, in plain words. Never says whether an email has an account.
 function friendly(e) {
@@ -79,7 +80,7 @@ function friendly(e) {
   if (m.includes('weak') || m.includes('pwned') || m.includes('password should')) return 'Pick a stronger password, one you don’t use elsewhere.';
   if (m.includes('fetch') || m.includes('network')) return 'No internet. Try again when you’re online.';
   if (m.includes('already registered')) return 'Couldn’t make that account. Try signing in instead.';
-  return 'Something went wrong. Try again.';
+  return 'KeepUp couldn’t reach your account just now. Check your internet and try again.';
 }
 
 export async function confirmSignOut() {

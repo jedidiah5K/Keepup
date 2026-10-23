@@ -129,7 +129,7 @@ function missedYesterday() {
 }
 
 // On a break: say so, and offer the way back.
-const breakCard = b => `<aside class="break-card"><span class="bk-ic" aria-hidden="true">🌴</span>
+const breakCard = b => `<aside class="break-card"><span class="bk-ic" aria-hidden="true">${I.pause}</span>
     <div class="grow"><b>Break until ${new Date(b.end_date + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</b><span class="muted small">Streaks are paused. Anything you tick still counts.</span></div>
     <button class="btn sm" data-a="endBreak">I’m back</button></aside>`;
 
