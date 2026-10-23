@@ -645,3 +645,22 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .welcome { grid-template-columns: minmax(0, 1fr); }
 .welcome .ob-body, .cards { min-width: 0; }
 .tick { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+
+/* Trophy shelf */
+.shelf { margin: 0 0 1.8rem; }
+.shelf-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem .4rem; margin-top: .8rem; }
+.trophy { display: grid; justify-items: center; gap: .35rem; font: 500 .62rem/1.2 var(--mono); letter-spacing: .02em; color: var(--muted); text-align: center; animation: lift .6s var(--out) both calc(.25s + var(--i) * 30ms); }
+.trophy.on { color: var(--ink); }
+.trophy .medal { transition: transform .35s var(--spring); }
+.trophy:active .medal { transform: scale(.9) rotate(-6deg); }
+.trophy-sheet { display: grid; justify-items: center; text-align: center; gap: .4rem; padding: .5rem 0 1rem; }
+.trophy-sheet .medal.on { animation: medalIn .8s var(--spring) both; }
+@keyframes medalIn { from { transform: scale(.4) rotate(-40deg); opacity: 0; } }
+.trophy-pop { position: fixed; left: 50%; bottom: calc(6.5rem + env(safe-area-inset-bottom)); translate: -50% 0; z-index: 60; display: flex; align-items: center; gap: .8rem; padding: .6rem 1.2rem .6rem .6rem; border-radius: 999px; background: var(--ink); color: var(--bg); box-shadow: 0 12px 40px rgba(0, 0, 0, .25); animation: popUp .6s var(--spring) both; }
+.trophy-pop span { display: grid; gap: .15rem; }
+.trophy-pop small { font: 500 .62rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+.trophy-pop b { font: italic 400 1.25rem/1 var(--serif); }
+.trophy-pop .medal { animation: medalIn .8s var(--spring) both .1s; }
+.trophy-pop.out { opacity: 0; transform: translateY(12px); transition: .35s var(--out); }
+@keyframes popUp { from { opacity: 0; transform: translateY(30px) scale(.9); } }
+@media (prefers-reduced-motion: reduce) { .trophy, .trophy-pop, .trophy-pop .medal, .trophy-sheet .medal.on { animation: none; } }

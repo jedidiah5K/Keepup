@@ -8,6 +8,7 @@ import { esc, toast } from '../ui/sheets.js';
 import { buzz, SOUNDS, burst, confetti, celebrate, MILESTONES } from '../ui/feedback.js';
 import { scene, mountScene } from '../ui/scene.js';
 import { canInstall, nudgeHidden, isIOS } from '../ui/install.js';
+import { checkNew } from '../ui/medal.js';
 
 export const view = { day: null, just: null }; // day null = today; just = habit id ticked a moment ago
 
@@ -207,6 +208,7 @@ export function tick(btn, rerender) {
     if (before.repair && st.repaired.length > before.repaired.length) setTimeout(() => celebrate(st.current, `${h.icon} ${h.name}`, COLOURS[h.colour], 'Streak repaired. Welcome back.'), 450);
     else if (hit) setTimeout(() => celebrate(st.current, `${h.icon} ${h.name}`, COLOURS[h.colour]), 450);
     else if (all && !allBefore) setTimeout(() => { SOUNDS.summit(); confetti(36); buzz(30); }, 650);
+    checkNew(hit || before.repair ? 3900 : all && !allBefore ? 2600 : 1200);
   } else if (next > c) { SOUNDS.plus(); buzz(8); }
   else { SOUNDS.undo(); buzz(8); toast(`Unticked ${esc(h.name)} · <button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="${c}">Undo</button>`); }
   view.just = id; view.justFrom = c;

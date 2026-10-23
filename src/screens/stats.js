@@ -6,6 +6,8 @@ import { COLOURS } from '../lib/theme.js';
 import { streakOf, dueOn } from './today.js';
 import { I } from '../ui/icons.js';
 import { esc } from '../ui/sheets.js';
+import { TROPHIES } from '../lib/trophies.js';
+import { medal, myTrophies } from '../ui/medal.js';
 
 export const view = { habit: null };
 const pct = x => Math.round(x * 100) + '%';
@@ -61,7 +63,15 @@ function overview(hs) {
       </div>
       <div class="ov-bars" role="img" aria-label="${perfect} perfect days in the last 30">${days.map((x, i) => `<i class="${x.p === 1 ? 'full' : ''} ${x.p == null || x.d < first ? 'off' : ''}" style="--p:${x.p ?? 0};--i:${i}" title="${x.d}"></i>`).join('')}</div>
       <div class="ov-axis muted small"><span>30 days ago</span><span>Today</span></div>
-    </section>`;
+    </section>
+    ${trophies()}`;
+}
+
+// The trophy shelf: earned ones in colour, the rest as outlines that say how to get them.
+function trophies() {
+  const got = myTrophies(), n = TROPHIES.filter(t => got.has(t.id)).length;
+  return `<section class="shelf"><div class="card-h"><span class="eyebrow">Trophies</span><span class="muted small">${n} of ${TROPHIES.length}</span></div>
+    <div class="shelf-grid">${TROPHIES.map((t, i) => `<button class="trophy ${got.has(t.id) ? 'on' : ''}" data-a="trophy" data-id="${t.id}" style="--i:${i}" aria-label="${esc(t.name)}${got.has(t.id) ? ', earned' : `, locked. ${esc(t.how)}`}">${medal(t, got.has(t.id))}<span>${esc(t.name)}</span></button>`).join('')}</div></section>`;
 }
 
 export function render() {

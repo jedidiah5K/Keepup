@@ -45,7 +45,7 @@ export async function loadSquad() {
     SQ.nudgedByMe = new Set(nudges.filter(n => n.from_user === me).map(n => n.to_user));
     SQ.nudgedMe = nudges.filter(n => n.to_user === me).map(n => byUser.get(n.from_user)?.name).filter(Boolean);
   } catch (e) { SQ.error = !navigator.onLine || /fetch|network/i.test(e?.message || '') ? 'You’re offline. Your squad shows up when you’re back online.' : 'Couldn’t load your squad just now.'; }
-  finally { SQ.loading = false; SQ.loaded = true; SQ.at = Date.now(); changed(); }
+  finally { SQ.loading = false; SQ.loaded = true; SQ.at = Date.now(); if (!SQ.error) try { localStorage.setItem('keepup:insquad', SQ.squad ? '1' : ''); } catch (e) {} changed(); }
 }
 
 // My own ticks today, straight from the phone (the server may not have them yet).

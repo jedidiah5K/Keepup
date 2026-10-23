@@ -139,6 +139,12 @@ const ACTIONS = {
   syncNow: async () => (await loadCloud()).sync(),
   install: () => install(),
   endBreak: () => { endBreak(); SOUNDS.step(4); toast('Welcome back. Let’s go.'); render(); },
+  trophy: async el => {
+    const [{ TROPHIES }, { medal, myTrophies }] = await Promise.all([import('./lib/trophies.js'), import('./ui/medal.js')]);
+    const t = TROPHIES.find(x => x.id === el.dataset.id), on = myTrophies().has(t.id);
+    SOUNDS.tap();
+    openSheet(`<div class="trophy-sheet">${medal(t, on, 120)}<h2 class="sheet-h serif-h">${esc(t.name)}</h2><p class="muted">${on ? `Earned. ${esc(t.how)}.` : `Not yet. ${esc(t.how)}.`}</p></div>`, { label: t.name });
+  },
   hideRecap: el => { const c = el.closest('.recap'); Today.hideRecap(c.dataset.w); c.classList.add('bye'); setTimeout(render, 280); },
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };
