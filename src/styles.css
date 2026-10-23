@@ -522,6 +522,13 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .tabs button.hop svg { animation: tabhop .5s var(--spring); }
 @keyframes tabhop { 40% { transform: translateY(-4px) scale(1.12); } }
 
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { width: 100%; padding-right: 3.2rem; }
+.pw-eye { position: absolute; right: .35rem; top: 50%; translate: 0 -50%; width: 2.6rem; height: 2.6rem; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+.pw-eye .slash { stroke-dasharray: 23; stroke-dashoffset: 0; transition: stroke-dashoffset .3s var(--out); }
+.pw-eye[aria-pressed="true"] { color: var(--ink); }
+.pw-eye[aria-pressed="true"] .slash { stroke-dashoffset: 23; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

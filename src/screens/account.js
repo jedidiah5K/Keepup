@@ -4,6 +4,8 @@ import { signIn, signUp, resetPassword, setPassword, signOut } from '../lib/clou
 import { state } from '../lib/store.js';
 import { esc, openSheet, closeSheet, toast, confirmSheet } from '../ui/sheets.js';
 
+const EYE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg>';
+
 const MODES = {
   in: { h: 'Welcome <em>back</em>', btn: 'Sign in' },
   up: { h: 'Keep your <em>streaks</em> safe', btn: 'Create account' },
@@ -17,7 +19,7 @@ export function openAuth(mode = 'up') {
     ${m === 'reset' ? '<p class="muted small">We’ll email you a link to set a new one.</p>' : ''}
     <form class="auth" data-mode="${m}" novalidate>
       ${m !== 'newpw' ? `<label class="fld"><span>Email</span><input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254" autofocus></label>` : ''}
-      ${m !== 'reset' ? `<label class="fld"><span>Password</span><input name="pw" type="password" minlength="8" maxlength="72" required autocomplete="${m === 'in' ? 'current-password' : 'new-password'}"></label>` : ''}
+      ${m !== 'reset' ? `<label class="fld"><span>Password</span><span class="pw-wrap"><input name="pw" type="password" minlength="8" maxlength="72" required autocomplete="${m === 'in' ? 'current-password' : 'new-password'}"><button type="button" class="pw-eye" data-eye aria-label="Show password" aria-pressed="false">${EYE}</button></span></label>` : ''}
       ${m === 'up' ? '<label class="agree"><input type="checkbox" name="age" required> <span>I’m 13 or older and agree to the <a class="link" href="/terms.html" target="_blank">terms</a> and <a class="link" href="/privacy.html" target="_blank">privacy policy</a>.</span></label>' : ''}
       <p class="auth-err" role="alert"></p>
       <button class="btn wide" type="submit">${MODES[m].btn}</button>
@@ -30,6 +32,10 @@ export function openAuth(mode = 'up') {
   const sh = openSheet(body(mode), {
     label: 'Account',
     mount(b) {
+      b.addEventListener('click', e => {
+        const eye = e.target.closest('[data-eye]');
+        if (eye) { const inp = eye.previousElementSibling, show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; eye.setAttribute('aria-pressed', show); eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); inp.focus({ preventScroll: true }); return; }
+      });
       b.addEventListener('click', e => { const to = e.target.closest('[data-to]')?.dataset.to; if (to) { b.innerHTML = body(to); b.querySelector('input')?.focus(); } });
       b.addEventListener('submit', async e => {
         e.preventDefault();
