@@ -61,12 +61,14 @@ function habitRow(h, d, i) {
   const sub = h.schedule_type === 'x_per_week' ? `${st.weekDone} of ${st.weekTarget} this week` : h.kind === 'count' ? `${c} of ${h.target_count}` : h.schedule_type === 'weekdays' ? 'Some days' : 'Every day';
   // Lost a streak? Most people quit right here. Say something kind and keep their best on show.
   const comeback = !st.current && st.longest >= 3 && h.schedule_type !== 'x_per_week' && !c;
+  // Evening, streak going, not done yet: say what's at stake.
+  const atRisk = !done && st.current >= 3 && d === today() && h.schedule_type !== 'x_per_week' && new Date().getHours() >= 18;
   const pct = n => Math.round(Math.min(1, n / h.target_count) * 100), pc = h.kind === 'count' ? pct(c) : 0, pp = just && view.justFrom != null ? pct(view.justFrom) : pc;
   const label = `${h.name}: ${done ? 'done' : h.kind === 'count' ? `${c} of ${h.target_count}, tap to add one` : 'not done, tap to tick'}`;
   return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}">
     <button class="h-main" data-a="habitMenu" data-id="${h.id}" aria-label="${esc(h.name)} options">
       <span class="h-ic" aria-hidden="true">${esc(h.icon)}</span>
-      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta">${comeback ? `Fresh start · best ${st.longest}` : esc(sub)}</span></span>
+      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk ? 'risk' : ''}">${comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
     </button>
     <span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>
     <button class="tick ${h.kind === 'count' ? 'count' : ''}" data-a="tick" data-id="${h.id}" data-d="${d}" aria-label="${esc(label)}" aria-pressed="${done}" ${lock ? 'disabled' : ''} style="--pc:${pc};--pp:${pp}">
@@ -100,6 +102,7 @@ export function render() {
     </section>
     <div class="sheet-top">
       ${weekStrip(d)}
+      ${isToday ? missedYesterday() : ''}
       ${!editable(d) ? `<p class="note">${I.lock}<span>Days more than a week ago are locked, so streaks stay honest.</span></p>` : ''}
       ${!hs.length ? `<div class="empty"><h2 class="display">Start with <em>one</em> habit.</h2>
           <p class="muted">Small and daily beats big and rare. Add as many as you like, free, always.</p>
@@ -110,6 +113,15 @@ export function render() {
       ${isToday && hs.length && canInstall() && !nudgeHidden() ? installCard() : ''}
     </div>
 `;
+}
+
+// Forgot to tick last night? Offer yesterday before the streak quietly breaks (until noon).
+function missedYesterday() {
+  if (new Date().getHours() >= 12) return '';
+  const y = addDays(today(), -1);
+  const open = activeHabits().filter(h => dueOn(h, y) && h.schedule_type !== 'x_per_week' && countFor(h.id, y) < h.target_count && streakOf(h, addDays(y, -1)).current > 0);
+  if (!open.length) return '';
+  return `<button class="note yday" data-a="pickDay" data-d="${y}">${I.left}<span>${open.length === 1 ? `<b>${esc(open[0].name)}</b> isn’t ticked for yesterday.` : `${open.length} habits aren’t ticked for yesterday.`} Did you do ${open.length === 1 ? 'it' : 'them'}? Tap to fill in.</span></button>`;
 }
 
 // While in beta, KeepUp is installed from the browser. A quiet card, not a pop-up.
