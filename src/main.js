@@ -183,4 +183,19 @@ addEventListener('keepup:squad', () => { if (NAV.tab === 'squad' && !document.qu
 if (hasJoin() && state.profile.onboarded) { NAV.tab = 'squad'; render(); setTimeout(() => { if (!cloud.user) Squad.openJoin(null); }, 1200); }
 addEventListener('keepup:installable', () => render());
 if ('serviceWorker' in navigator && import.meta.env.PROD) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+
+// A home-screen app can stay open for days. When a newer version is live, offer a one-tap reload.
+const mine = document.querySelector('script[type="module"][src*="/assets/index-"]')?.getAttribute('src');
+let checkedAt = 0, offered = false;
+async function checkUpdate() {
+  if (!mine || offered || !navigator.onLine || Date.now() - checkedAt < 5 * 60e3) return;
+  checkedAt = Date.now();
+  try {
+    const html = await (await fetch('/?fresh=1', { cache: 'no-store' })).text();
+    const live = html.match(/\/assets\/index-[\w-]+\.js/)?.[0];
+    if (live && live !== mine) { offered = true; toast('A new version of KeepUp is ready. <button class="link" data-a="reloadApp">Update</button>', 12e3); }
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+ACTIONS.reloadApp = () => location.reload();
 window.KeepUp = { state, render, toast };

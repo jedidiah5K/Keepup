@@ -14,7 +14,7 @@ function pageFirst(e) {
 }
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
-  if (e.request.method !== 'GET' || u.origin !== location.origin) return; // never cache account or database calls
+  if (e.request.method !== 'GET' || u.origin !== location.origin || u.searchParams.has('fresh')) return; // never cache account or database calls, or the update check
   e.respondWith(e.request.mode === 'navigate' ? pageFirst(e)
     : caches.match(e.request).then(r => r || fetch(e.request).then(res => { if (res.ok) { const c = res.clone(); caches.open(CACHE).then(x => x.put(e.request, c)); } return res; })));
 });
