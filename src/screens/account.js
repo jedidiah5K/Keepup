@@ -1,4 +1,4 @@
-// Sign in / create account / reset password, in a bottom sheet. Email + password for now;
+// Sign in / create account, in a bottom sheet. Email + password, and no emails are sent;
 // Google and Apple sign-in come with the phone apps.
 import { signIn, signUp, resetPassword, setPassword, signOut } from '../lib/cloud.js';
 import { state } from '../lib/store.js';
@@ -27,7 +27,7 @@ export function openAuth(mode = 'up') {
     </form>
     <div class="auth-alt">
       ${m === 'up' ? '<button class="link" data-to="in">I already have an account</button>' : ''}
-      ${m === 'in' ? '<button class="link" data-to="up">Create an account</button><button class="link" data-to="reset">Forgot password?</button>' : ''}
+      ${m === 'in' ? '<button class="link" data-to="up">Create an account</button>' : ''}
       ${m === 'reset' ? '<button class="link" data-to="in">Back to sign in</button>' : ''}
     </div>`;
   const sh = openSheet(body(mode), {
@@ -57,7 +57,9 @@ export function openAuth(mode = 'up') {
         } catch (x) { res = { error: x }; }
         btn.disabled = false; btn.classList.remove('busy');
         if (res.error) return fail(friendly(res.error));
-        if (m === 'up' && !res.data.session) { b.innerHTML = sent('Check your email', `We sent a link to <b>${esc(email)}</b>. Tap it to finish making your account.`); return; }
+        // No emails: the account is ready straight away. If the server still wants a confirmed
+        // email, say so plainly instead of sending people to their inbox.
+        if (m === 'up' && !res.data.session) return fail('Sign-ups are paused for a moment. Try again soon.');
         if (m === 'reset') { b.innerHTML = sent('Check your email', `If <b>${esc(email)}</b> has an account, a reset link is on its way.`); return; }
         closeSheet(sh);
         toast(m === 'newpw' ? 'Password saved.' : m === 'up' ? 'Account made. Your habits are backed up.' : 'Signed in. Syncing your habits…');
@@ -72,7 +74,7 @@ const sent = (h, p) => `<div class="sent"><div class="sent-ic" aria-hidden="true
 function friendly(e) {
   const m = (e.message || '').toLowerCase();
   if (m.includes('invalid login')) return 'Email or password is wrong.';
-  if (m.includes('not confirmed')) return 'Tap the link in your email first, then sign in.';
+  if (m.includes('not confirmed')) return 'Sign-ups are paused for a moment. Try again soon.';
   if (m.includes('rate') || e.status === 429) return 'Too many tries. Wait a few minutes and try again.';
   if (m.includes('weak') || m.includes('pwned') || m.includes('password should')) return 'Pick a stronger password, one you don’t use elsewhere.';
   if (m.includes('fetch') || m.includes('network')) return 'No internet. Try again when you’re online.';
