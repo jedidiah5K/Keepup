@@ -66,7 +66,7 @@ function habitRow(h, d, i) {
   const atRisk = !done && st.current >= 3 && d === today() && h.schedule_type !== 'x_per_week' && new Date().getHours() >= 18;
   const pct = n => Math.round(Math.min(1, n / h.target_count) * 100), pc = h.kind === 'count' ? pct(c) : 0, pp = just && view.justFrom != null ? pct(view.justFrom) : pc;
   const label = `${h.name}: ${done ? 'done' : h.kind === 'count' ? `${c} of ${h.target_count}, tap to add one` : 'not done, tap to tick'}`;
-  return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}">
+  return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}" data-hint="${h.kind === 'count' ? 'Tap to add one' : 'Tap to tick it off'}">
     <button class="h-main" data-a="habitMenu" data-id="${h.id}" aria-label="${esc(h.name)} options">
       <span class="h-ic" aria-hidden="true">${esc(h.icon)}</span>
       <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk ? 'risk' : ''}">${comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
@@ -109,7 +109,7 @@ export function render() {
           <p class="muted">Small and daily beats big and rare. Add as many as you like, free, always.</p>
           <button class="btn mt3" data-a="newHabit">${I.plus} Add a habit</button></div>`
         : !list.length ? `<div class="empty"><p class="muted">Nothing scheduled for this day. Enjoy the rest.</p></div>`
-        : `<ul class="habits" aria-label="Habits for ${fmtDay(d)}">${list.map((h, i) => habitRow(h, d, i)).join('')}</ul>`}
+        : `<ul class="habits ${firstRun() ? 'coach' : ''}" aria-label="Habits for ${fmtDay(d)}">${list.map((h, i) => habitRow(h, d, i)).join('')}</ul>`}
       ${isToday ? weekSummary() : ''}
       ${isToday && hs.length && canInstall() && !nudgeHidden() ? installCard() : ''}
     </div>
@@ -124,6 +124,9 @@ function missedYesterday() {
   if (!open.length) return '';
   return `<button class="note yday" data-a="pickDay" data-d="${y}">${I.left}<span>${open.length === 1 ? `<b>${esc(open[0].name)}</b> isn’t ticked for yesterday.` : `${open.length} habits aren’t ticked for yesterday.`} Did you do ${open.length === 1 ? 'it' : 'them'}? Tap to fill in.</span></button>`;
 }
+
+// Brand new: nothing ticked ever. The first circle pulses with a small "tap to tick" hint.
+const firstRun = () => !Object.values(state.checkins).some(days => Object.values(days).some(n => n > 0));
 
 // The first two days of a new week: how last week went, in one card. Closes for the week.
 const RECAP = 'keepup:recap';

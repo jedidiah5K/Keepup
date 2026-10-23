@@ -60,6 +60,7 @@ for (const scheme of ['light', 'dark']) for (const [tag, viewport] of sizes) {
   await shot('01-intro');
   await page.fill('[data-ob="name"]', 'Alex'); await page.click('[data-a="obNext"]'); await shot('02-intro-habits');
   await page.click('[data-a="obNext"]'); await shot('02b-intro-look');
+  await page.click('[data-a="obNext"]'); await page.evaluate(() => { document.getElementById('screen').scrollTop = 300; }); await shot('02c-first-today');
   // seeded app
   await page.evaluate(seed, scheme === 'dark' ? 'midnight' : 'paper'); await page.evaluate(fakeSession); await page.reload();
   await shot('03-today');
