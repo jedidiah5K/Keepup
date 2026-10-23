@@ -33,7 +33,8 @@ export function render() {
 export function welcome() {
   return `<div class="ob welcome"><section class="hero">${scene(.08)}</section>
     <div class="ob-body"><h1>Habits that stick, <em>with friends.</em></h1>
-      <p class="muted">Unlimited habits, streaks and squads. Free forever on the basics, no ads.</p></div>
+      <p class="muted">Unlimited habits, streaks and squads. Free forever on the basics, no ads.</p>
+      <p class="proof" aria-label="A missed day won’t wipe your streak. Squads of up to 5 friends. Works offline, opens instantly."><span>❄︎ A missed day won’t wipe your streak</span><span>👥 Squads of up to 5 friends</span><span>⚡︎ Works offline, opens instantly</span></p></div>
     <div class="ob-foot stack-foot"><button class="btn wide" data-a="auth" data-mode="up">Create an account</button>
       <button class="btn ghost wide" data-a="auth" data-mode="in">I already have one</button></div></div>`;
 }
