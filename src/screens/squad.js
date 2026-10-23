@@ -6,7 +6,7 @@ import { COLOURS, inkOn } from '../lib/theme.js';
 import { addDays, eachDay } from '../lib/dates.js';
 import { I } from '../ui/icons.js';
 import { esc, openSheet, closeSheet, toast, confirmSheet } from '../ui/sheets.js';
-import { buzz } from '../ui/feedback.js';
+import { buzz, SOUNDS, confetti } from '../ui/feedback.js';
 
 let mod = null; // lib/squads.js once loaded
 const squads = async () => (mod ||= await import('../lib/squads.js'));
@@ -82,8 +82,16 @@ const inviteCard = (slim = false) => `<div class="invite ${slim ? 'slim' : ''}">
     <div class="row gap"><button class="btn grow" data-a="sqInvite">${I.plus} Invite friends</button></div>
   </div>`;
 
+// Everyone showed up today: a small party, once a day.
+function cheer() {
+  const SQ = mod?.SQ, t = today(); if (!SQ?.squad || SQ.members.length < 2 || !SQ.members.every(m => m.done.has(t))) return;
+  try { if (localStorage.getItem('keepup:sqcheer') === SQ.squad.id + t) return; localStorage.setItem('keepup:sqcheer', SQ.squad.id + t); } catch (e) { return; }
+  setTimeout(() => { SOUNDS.summit(); confetti(40); buzz(30); }, 500);
+}
+
 export function afterRender() {
   if (!cloud.user) return;
+  cheer();
   squads().then(m => { if (!m.SQ.loading && (!m.SQ.loaded || Date.now() - m.SQ.at > 20e3)) m.loadSquad(); });
 }
 
