@@ -6,7 +6,7 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;'
 let toastT = null;
 export function toast(html, ms = 2600) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
-  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.innerHTML = html;
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.innerHTML = html.includes('t-one') ? html : `<span>${html}</span>`; // one text block, so flex never splits words
   document.body.appendChild(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), ms);
 }
 

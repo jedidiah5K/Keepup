@@ -258,11 +258,13 @@ h2.display { font-size: 2rem; }
 /* ---------- toast & sheets ---------- */
 .toast {
   position: fixed; left: 50%; bottom: calc(5.6rem + env(safe-area-inset-bottom)); translate: -50% 0; z-index: 60;
-  background: var(--bar); color: var(--bar-ink); padding: .8rem 1.1rem; border-radius: 999px; font-size: .88rem; max-width: calc(100vw - 2rem);
+  background: var(--bar); color: var(--bar-ink); padding: .8rem 1.1rem; border-radius: 22px; font-size: .88rem; width: max-content; max-width: calc(100vw - 2rem);
+  display: flex; align-items: center; gap: .9rem;
   box-shadow: 0 16px 40px -14px rgba(0, 0, 0, .5); animation: toast .45s var(--spring);
 }
 @keyframes toast { from { opacity: 0; transform: translateY(16px) scale(.95); } }
-.toast .link { color: var(--accent); margin-left: .5rem; }
+.toast .link { color: var(--accent); flex: none; }
+.toast .t-one { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-wrap { position: fixed; inset: 0; z-index: 40; }
 .scrim { position: absolute; inset: 0; background: rgba(10, 10, 12, .35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: fade .25s; }
 @keyframes fade { from { opacity: 0; } }

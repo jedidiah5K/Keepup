@@ -211,7 +211,7 @@ export function tick(btn, rerender) {
     else if (all && !allBefore) setTimeout(() => { SOUNDS.summit(); confetti(36); buzz(30); }, 650);
     checkNew(hit || before.repair ? 3900 : all && !allBefore ? 2600 : 1200);
   } else if (next > c) { SOUNDS.plus(); buzz(8); }
-  else { SOUNDS.undo(); buzz(8); toast(`Unticked ${esc(h.name)} · <button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="${c}">Undo</button>`); }
+  else { SOUNDS.undo(); buzz(8); toast(`<span class="t-one">Unticked ${esc(h.name)}</span><button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="${c}">Undo</button>`); }
   view.just = id; view.justFrom = c;
   rerender();
   if (nowDone && !wasDone) { const el = document.querySelector(`.habit[data-id="${id}"] .tick`); el?.focus({ preventScroll: true }); }
