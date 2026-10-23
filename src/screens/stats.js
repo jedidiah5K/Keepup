@@ -3,7 +3,7 @@ import { state, today, activeHabits, countFor, habitById } from '../lib/store.js
 import { addDays, weekOf } from '../lib/dates.js';
 import { completion } from '../lib/streaks.js';
 import { COLOURS } from '../lib/theme.js';
-import { streakOf } from './today.js';
+import { streakOf, dueOn } from './today.js';
 import { I } from '../ui/icons.js';
 import { esc } from '../ui/sheets.js';
 
@@ -43,11 +43,33 @@ function detail(h) {
     <div class="row gap"><button class="btn grow" data-a="shareStreak" data-id="${h.id}">${I.share} Share streak</button><button class="btn ghost grow" data-a="editHabit" data-id="${h.id}">Edit habit</button></div>`;
 }
 
+// The last 30 days across every habit: one bar per day, how much of the day's list got done.
+function overview(hs) {
+  const t = today(), daily = hs.filter(h => h.schedule_type !== 'x_per_week');
+  const days = [...Array(30)].map((_, i) => addDays(t, i - 29)).map(d => {
+    const due = daily.filter(h => dueOn(h, d));
+    return { d, p: due.length ? due.filter(h => countFor(h.id, d) >= h.target_count).length / due.length : null };
+  });
+  const first = hs.reduce((m, h) => h.start_date < m ? h.start_date : m, t), perfect = days.filter(x => x.p === 1).length;
+  const checks = hs.reduce((n, h) => n + Object.entries(state.checkins[h.id] || {}).filter(([, c]) => c >= h.target_count).length, 0);
+  const best = hs.reduce((m, h) => { const st = streakOf(h); return st.longest > m.n ? { n: st.longest, h } : m; }, { n: 0, h: null });
+  return `<section class="ov">
+      <div class="ov-nums">
+        <div><b data-count="${perfect}">${perfect}</b><span class="muted small">perfect days<br>in the last 30</span></div>
+        <div><b data-count="${checks}">${checks}</b><span class="muted small">check-ins<br>all time</span></div>
+        <div><b data-count="${best.n}">${best.n}</b><span class="muted small">best streak${best.h ? `<br>${esc(best.h.icon)} ${esc(best.h.name)}` : ''}</span></div>
+      </div>
+      <div class="ov-bars" role="img" aria-label="${perfect} perfect days in the last 30">${days.map((x, i) => `<i class="${x.p === 1 ? 'full' : ''} ${x.p == null || x.d < first ? 'off' : ''}" style="--p:${x.p ?? 0};--i:${i}" title="${x.d}"></i>`).join('')}</div>
+      <div class="ov-axis muted small"><span>30 days ago</span><span>Today</span></div>
+    </section>`;
+}
+
 export function render() {
   const h = view.habit && habitById(view.habit);
   if (h) return detail(h);
   const t = today(), hs = activeHabits();
-  return `<header class="top"><div><div class="eyebrow">Free, always</div><h1>Your <em>progress</em></h1></div></header>
+  return `<header class="top"><div><div class="eyebrow">Stats</div><h1>Your <em>progress</em></h1></div></header>
+    ${hs.length ? overview(hs) : ''}
     ${!hs.length ? '<div class="card empty"><p class="muted">Add a habit and your stats show up here.</p></div>' : `<ul class="slist">${hs.map(h => {
       const st = streakOf(h), c = state.checkins[h.id] || {};
       const wk = completion(h, c, [weekOf(t, state.profile.week_start), h.start_date].sort()[1], t);

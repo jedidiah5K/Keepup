@@ -541,3 +541,17 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .note.yday svg { color: var(--accent); }
 .note.yday:active { transform: scale(.98); }
 @media (prefers-reduced-motion: reduce) { .h-meta.risk { animation: none; } }
+
+/* Stats overview: three numbers and 30 days of bars */
+.ov { margin: 0 0 1.6rem; }
+.ov-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-bottom: 1.2rem; }
+.ov-nums > div { display: grid; gap: .3rem; align-content: start; }
+.ov-nums b { font: 400 2.6rem/1 var(--serif); }
+.ov-nums .small { line-height: 1.3; overflow: hidden; text-overflow: ellipsis; }
+.ov-bars { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; height: 64px; align-items: end; }
+.ov-bars i { height: max(4px, calc(var(--p) * 100%)); border-radius: 3px; background: color-mix(in oklab, var(--ink) 22%, transparent); transform-origin: bottom; animation: barUp .7s var(--out) both calc(var(--i) * 18ms); }
+.ov-bars i.full { background: var(--accent); }
+.ov-bars i.off { height: 4px; background: color-mix(in oklab, var(--ink) 8%, transparent); }
+.ov-axis { display: flex; justify-content: space-between; margin-top: .4rem; font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; }
+@keyframes barUp { from { transform: scaleY(0); } }
+@media (prefers-reduced-motion: reduce) { .ov-bars i { animation: none; } }
