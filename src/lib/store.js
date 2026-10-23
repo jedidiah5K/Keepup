@@ -48,7 +48,7 @@ const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f\u007f]/g, '').tr
 export function saveHabit(h) {
   const now = new Date().toISOString();
   const row = {
-    id: h.id || uid(), name: clean(h.name, LIMITS.name) || 'New habit', icon: clean(h.icon, 8) || '✅', colour: h.colour || 'tangerine',
+    id: h.id || uid(), name: clean(h.name, LIMITS.name) || 'New habit', icon: clean(h.icon, 16) || 'i:check', colour: h.colour || 'tangerine',
     kind: h.kind === 'count' ? 'count' : 'yes_no', target_count: h.kind === 'count' ? Math.min(100, Math.max(1, +h.target_count || 1)) : 1,
     schedule_type: ['daily', 'weekdays', 'x_per_week'].includes(h.schedule_type) ? h.schedule_type : 'daily',
     schedule_days: (h.schedule_days || []).filter(d => d >= 1 && d <= 7), times_per_week: h.schedule_type === 'x_per_week' ? Math.min(7, Math.max(1, +h.times_per_week || 3)) : null,

@@ -5,6 +5,7 @@ import { state, setProfile, saveHabit } from '../lib/store.js';
 import { THEMES, swapTheme } from '../lib/theme.js';
 import { STARTERS } from './habitForm.js';
 import { esc } from '../ui/sheets.js';
+import { hi } from '../ui/hicons.js';
 import { scene, mountScene, climbTo } from '../ui/scene.js';
 
 export const OB = { step: 0, picks: new Set([0, 2]) };
@@ -18,7 +19,7 @@ export function render() {
     <label class="fld mt3"><span>What should we call you?</span><input data-ob="name" maxlength="40" value="${esc(state.profile.display_name)}" placeholder="First name" autocomplete="given-name"></label>
 `;
   if (s === 'habits') inner = `<h1>Pick a few <em>to start.</em></h1><p class="muted">Change or add more any time.</p>
-    <div class="ob-picks">${STARTERS.map((h, i) => `<button class="ob-pick ${OB.picks.has(i) ? 'on' : ''}" aria-pressed="${OB.picks.has(i)}" data-a="obPick" data-i="${i}"><span aria-hidden="true">${h.icon}</span>${esc(h.name)}</button>`).join('')}</div>`;
+    <div class="ob-picks">${STARTERS.map((h, i) => `<button class="ob-pick ${OB.picks.has(i) ? 'on' : ''}" aria-pressed="${OB.picks.has(i)}" data-a="obPick" data-i="${i}"><span aria-hidden="true">${hi(h.icon)}</span>${esc(h.name)}</button>`).join('')}</div>`;
   if (s === 'look') inner = `<h1>Pick <em>your look.</em></h1><p class="muted">Change it later in Me.</p>
     <div class="themes">${THEMES.map(t => `<button class="theme-pick ${state.profile.theme === t.k ? 'on' : ''}" aria-pressed="${state.profile.theme === t.k}" data-a="obTheme" data-k="${t.k}">
       <span class="t-sw" aria-hidden="true">${t.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><span class="t-name">${t.name}${t.pro ? ' <span class="pro beta">Free in beta</span>' : ''}</span><span class="muted small">${t.desc}</span></button>`).join('')}</div>

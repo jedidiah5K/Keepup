@@ -1,4 +1,5 @@
 // Stats: per-habit completion, streaks, and a calendar heatmap. All free.
+import { hi } from '../ui/hicons.js';
 import { state, today, activeHabits, countFor, habitById } from '../lib/store.js';
 import { addDays, weekOf } from '../lib/dates.js';
 import { completion } from '../lib/streaks.js';
@@ -33,7 +34,7 @@ function detail(h) {
   const mo = completion(h, c, [monthStart(t), start].sort()[1], t, state.breaks);
   const total = Object.values(c).filter(n => n >= h.target_count).length;
   return `<header class="top"><button class="back" data-a="statsBack">${I.left}Stats</button></header>
-    <h1 class="h-title"><span aria-hidden="true">${esc(h.icon)}</span> ${esc(h.name)}</h1>
+    <h1 class="h-title"><span class="sh-ic" aria-hidden="true" style="--hc:${COLOURS[h.colour]}">${hi(h.icon)}</span> ${esc(h.name)}</h1>
     <div class="tiles">
       <div class="tile"><span class="eyebrow">Current streak</span><b data-count="${st.current}">${st.current}</b><span class="muted">${unitOf(st, st.current)}</span></div>
       <div class="tile"><span class="eyebrow">Longest</span><b data-count="${st.longest}">${st.longest}</b><span class="muted">${unitOf(st, st.longest)}</span></div>
@@ -59,7 +60,7 @@ function overview(hs) {
       <div class="ov-nums">
         <div><b data-count="${perfect}">${perfect}</b><span class="muted small">perfect days<br>in the last 30</span></div>
         <div><b data-count="${checks}">${checks}</b><span class="muted small">check-ins<br>all time</span></div>
-        <div><b data-count="${best.n}">${best.n}</b><span class="muted small">best streak${best.h ? `<br>${esc(best.h.icon)} ${esc(best.h.name)}` : ''}</span></div>
+        <div><b data-count="${best.n}">${best.n}</b><span class="muted small">best streak${best.h ? `<br>${esc(best.h.name)}` : ''}</span></div>
       </div>
       <div class="ov-bars" role="img" aria-label="${perfect} perfect days in the last 30">${days.map((x, i) => `<i class="${x.p === 1 ? 'full' : ''} ${x.p == null || x.d < first ? 'off' : ''}" style="--p:${x.p ?? 0};--i:${i}" title="${x.d}"></i>`).join('')}</div>
       <div class="ov-axis muted small"><span>30 days ago</span><span>Today</span></div>
@@ -84,7 +85,7 @@ export function render() {
       const st = streakOf(h), c = state.checkins[h.id] || {};
       const wk = completion(h, c, [weekOf(t, state.profile.week_start), h.start_date].sort()[1], t, state.breaks);
       return `<li><button class="srow" data-a="openStats" data-id="${h.id}" style="--hc:${COLOURS[h.colour]}">
-        <span class="h-ic" aria-hidden="true">${esc(h.icon)}</span>
+        <span class="h-ic" aria-hidden="true">${hi(h.icon)}</span>
         <span class="h-txt"><span class="h-name">${esc(h.name)}</span><span class="muted small">${I.flame} ${st.current} now · best ${st.longest} ${unitOf(st, st.longest)}</span></span>
         <span class="spct"><b>${pct(wk)}</b><span class="muted small">this week</span></span>${I.right}</button></li>`;
     }).join('')}</ul>`}`;

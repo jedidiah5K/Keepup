@@ -2,29 +2,30 @@
 import { state, saveHabit, archiveHabit, deleteHabit, habitById, LIMITS } from '../lib/store.js';
 import { COLOURS } from '../lib/theme.js';
 import { openSheet, closeSheet, confirmSheet, esc, toast } from '../ui/sheets.js';
+import { hi, HICON_NAMES } from '../ui/hicons.js';
 
 const EMOJI = ['✅', '💧', '🏋️', '📖', '🧘', '😴', '🚶', '🥗', '🧴', '📵', '✍️', '🎸', '🧠', '🦷', '💊', '🌞', '🏃', '🚴', '🧹', '💸'];
 const DAYS = [[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri'], [6, 'Sat'], [7, 'Sun']];
 
 export const STARTERS = [
-  { name: 'Drink water', icon: '💧', colour: 'lagoon', kind: 'count', target_count: 8 },
-  { name: 'Gym', icon: '🏋️', colour: 'tangerine', schedule_type: 'x_per_week', times_per_week: 3 },
-  { name: 'Read 10 pages', icon: '📖', colour: 'grape' },
-  { name: 'Study', icon: '🧠', colour: 'ocean', schedule_type: 'weekdays', schedule_days: [1, 2, 3, 4, 5] },
-  { name: 'Skincare', icon: '🧴', colour: 'berry' },
-  { name: 'No phone before bed', icon: '📵', colour: 'cocoa' },
-  { name: 'Sleep by 11', icon: '😴', colour: 'grape' },
-  { name: 'Walk', icon: '🚶', colour: 'leaf' },
+  { name: 'Drink water', icon: 'i:water', colour: 'lagoon', kind: 'count', target_count: 8 },
+  { name: 'Gym', icon: 'i:lift', colour: 'tangerine', schedule_type: 'x_per_week', times_per_week: 3 },
+  { name: 'Read 10 pages', icon: 'i:book', colour: 'grape' },
+  { name: 'Study', icon: 'i:study', colour: 'ocean', schedule_type: 'weekdays', schedule_days: [1, 2, 3, 4, 5] },
+  { name: 'Skincare', icon: 'i:skin', colour: 'berry' },
+  { name: 'No phone before bed', icon: 'i:nophone', colour: 'cocoa' },
+  { name: 'Sleep by 11', icon: 'i:sleep', colour: 'grape' },
+  { name: 'Walk', icon: 'i:walk', colour: 'leaf' },
 ];
 
 export function openHabitForm(id, onDone) {
-  const h = id ? habitById(id) : { name: '', icon: '✅', colour: 'tangerine', kind: 'yes_no', target_count: 1, schedule_type: 'daily', schedule_days: [1, 2, 3, 4, 5], times_per_week: 3, reminder_time: '' };
+  const h = id ? habitById(id) : { name: '', icon: 'i:check', colour: 'tangerine', kind: 'yes_no', target_count: 1, schedule_type: 'daily', schedule_days: [1, 2, 3, 4, 5], times_per_week: 3, reminder_time: '' };
   const f = { ...h, schedule_days: [...(h.schedule_days?.length ? h.schedule_days : [1, 2, 3, 4, 5])], times_per_week: h.times_per_week || 3 };
   const body = () => `<form class="hform" novalidate>
     <h2 class="sheet-h">${id ? 'Edit habit' : 'New habit'}</h2>
     <label class="fld"><span>Name</span><input name="name" maxlength="${LIMITS.name}" value="${esc(f.name)}" placeholder="e.g. Drink water" required autocomplete="off" ${id ? '' : 'autofocus'}></label>
-    ${!id ? `<div class="fld"><span>Ideas</span><div class="chips">${STARTERS.slice(0, 6).map((s, i) => `<button type="button" class="chip" data-x="starter" data-i="${i}">${s.icon} ${esc(s.name)}</button>`).join('')}</div></div>` : ''}
-    <div class="fld"><span id="ic-l">Icon</span><div class="emoji-grid" role="radiogroup" aria-labelledby="ic-l">${EMOJI.map(e => `<button type="button" role="radio" aria-checked="${f.icon === e}" class="emo ${f.icon === e ? 'on' : ''}" data-x="icon" data-v="${e}" aria-label="${e}">${e}</button>`).join('')}</div></div>
+    ${!id ? `<div class="fld"><span>Ideas</span><div class="chips">${STARTERS.slice(0, 6).map((s, i) => `<button type="button" class="chip" data-x="starter" data-i="${i}">${hi(s.icon)} ${esc(s.name)}</button>`).join('')}</div></div>` : ''}
+    <div class="fld"><span id="ic-l">Icon</span><div class="emoji-grid" role="radiogroup" aria-labelledby="ic-l" style="--hc:${COLOURS[f.colour]}">${[...HICON_NAMES.map(n => 'i:' + n), ...EMOJI].map(e => `<button type="button" role="radio" aria-checked="${f.icon === e}" class="emo ${e.startsWith('i:') ? 'drawn' : ''} ${f.icon === e ? 'on' : ''}" data-x="icon" data-v="${e}" aria-label="${e.startsWith('i:') ? e.slice(2) : e}">${hi(e)}</button>`).join('')}</div></div>
     <div class="fld"><span id="col-l">Colour</span><div class="swatches" role="radiogroup" aria-labelledby="col-l">${Object.entries(COLOURS).map(([k, v]) => `<button type="button" role="radio" aria-checked="${f.colour === k}" class="sw ${f.colour === k ? 'on' : ''}" style="--c:${v}" data-x="colour" data-v="${k}" aria-label="${k}" title="${k}"></button>`).join('')}</div></div>
     <div class="fld"><span>Type</span><div class="seg" role="radiogroup">
       <button type="button" role="radio" aria-checked="${f.kind === 'yes_no'}" class="${f.kind === 'yes_no' ? 'on' : ''}" data-x="kind" data-v="yes_no">Yes / no</button>

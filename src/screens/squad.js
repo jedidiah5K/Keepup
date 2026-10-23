@@ -1,5 +1,6 @@
 // Squad tab: 2–5 friends, a shared streak, who's done today, nudges. Free.
 // Squad data lives on the server (lib/squads.js loads with the account code after first paint).
+import { hi } from '../ui/hicons.js';
 import { state, today, activeHabits } from '../lib/store.js';
 import { cloud, loadCloud } from '../lib/session.js';
 import { COLOURS, inkOn } from '../lib/theme.js';
@@ -68,7 +69,7 @@ function memberRow(m, t, days, me) {
   return `<li class="member ${done ? 'done' : ''}">
     ${face(m, 'lg')}
     <div class="grow"><b>${esc(m.name)}${isMe ? ' <span class="muted small">(you)</span>' : ''}${m.role === 'owner' ? ' <span class="owner-tag">Owner</span>' : ''}</b>
-      <span class="m-habits">${habits.length ? habits.map(h => `<i class="${(h.counts[t] || 0) >= h.target ? 'y' : ''}" title="${esc(h.name)}">${esc(h.icon)}</i>`).join('') : '<span class="muted small">No shared habits yet</span>'}</span>
+      <span class="m-habits">${habits.length ? habits.map(h => `<i class="${(h.counts[t] || 0) >= h.target ? 'y' : ''}" title="${esc(h.name)}">${hi(h.icon)}</i>`).join('') : '<span class="muted small">No shared habits yet</span>'}</span>
       <span class="m-week" aria-label="Last 7 days">${days.map(d => `<i class="${m.done.has(d) ? 'y' : ''} ${d < m.joined ? 'pre' : ''}"></i>`).join('')}</span></div>
     ${isMe ? `<span class="m-state">${done ? 'Done' : `${doneN}/${habits.length}`}</span>`
       : done ? `<span class="m-state ok">${I.check}</span>`
@@ -136,7 +137,7 @@ export const ACTIONS = {
     const m = await squads(), hs = activeHabits(), on = new Set(m.SQ.mine);
     const body = () => `<h2 class="sheet-h">What your <em>squad</em> sees</h2>
       <p class="muted small">Ticking any shared habit counts toward the squad streak. Unshared habits stay completely private.</p>
-      <ul class="share-list">${hs.map(h => `<li><label><span class="h-ic" style="--hc:${COLOURS[h.colour]}">${esc(h.icon)}</span><span class="grow">${esc(h.name)}</span><input type="checkbox" role="switch" class="switch" data-h="${h.id}" ${on.has(h.id) ? 'checked' : ''}></label></li>`).join('')}</ul>
+      <ul class="share-list">${hs.map(h => `<li><label><span class="h-ic" style="--hc:${COLOURS[h.colour]}">${hi(h.icon)}</span><span class="grow">${esc(h.name)}</span><input type="checkbox" role="switch" class="switch" data-h="${h.id}" ${on.has(h.id) ? 'checked' : ''}></label></li>`).join('')}</ul>
       <button class="btn wide mt3" data-save>Save</button>`;
     const sh = openSheet(body(), {
       label: 'Shared habits',

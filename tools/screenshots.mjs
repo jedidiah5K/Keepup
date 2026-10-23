@@ -20,11 +20,11 @@ const seed = theme => {
   const iso = d => d.toISOString().slice(0, 10), t = new Date(), day = n => iso(new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate() - n)));
   const H = (id, o) => ({ id, icon: '✅', colour: 'tangerine', kind: 'yes_no', target_count: 1, schedule_type: 'daily', schedule_days: [], times_per_week: null, reminder_time: null, start_date: day(60), archived_at: null, ...o });
   const habits = [
-    H('w', { name: 'Drink water', icon: '💧', colour: 'lagoon', kind: 'count', target_count: 8, sort_order: 0 }),
-    H('g', { name: 'Gym', icon: '🏋️', colour: 'tangerine', schedule_type: 'x_per_week', times_per_week: 3, sort_order: 1 }),
-    H('r', { name: 'Read 10 pages', icon: '📖', colour: 'grape', sort_order: 2 }),
+    H('w', { name: 'Drink water', icon: 'i:water', colour: 'lagoon', kind: 'count', target_count: 8, sort_order: 0 }),
+    H('g', { name: 'Gym', icon: 'i:lift', colour: 'tangerine', schedule_type: 'x_per_week', times_per_week: 3, sort_order: 1 }),
+    H('r', { name: 'Read 10 pages', icon: 'i:book', colour: 'grape', sort_order: 2 }),
     H('s', { name: 'Skincare', icon: '🧴', colour: 'berry', sort_order: 3 }),
-    H('p', { name: 'No phone before bed', icon: '📵', colour: 'cocoa', sort_order: 4 }),
+    H('p', { name: 'No phone before bed', icon: 'i:nophone', colour: 'cocoa', sort_order: 4 }),
   ];
   const checkins = { w: {}, g: {}, r: {}, s: {}, p: {} };
   for (let n = 1; n < 60; n++) {

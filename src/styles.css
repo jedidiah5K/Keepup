@@ -679,3 +679,17 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .sk-row span i { height: .8rem; width: 55%; } .sk-row span i + i { width: 35%; height: .6rem; }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .skel i { animation: none; } }
+
+/* Drawn habit icons take the habit's colour */
+.hi { width: 1.4rem; height: 1.4rem; display: block; }
+.h-ic .hi { color: var(--hc); width: 1.45rem; height: 1.45rem; }
+.emo.drawn { color: var(--hc, var(--ink)); display: grid; place-items: center; }
+.emo.drawn .hi { width: 1.35rem; height: 1.35rem; }
+.chip .hi, .ob-pick .hi { width: 1.05rem; height: 1.05rem; display: inline-block; vertical-align: -3px; }
+.ob-pick > span .hi { display: block; }
+.m-habits i .hi { width: 1.05rem; height: 1.05rem; display: inline-block; vertical-align: -2px; }
+.m-ic { display: grid; place-items: center; width: 1.6rem; } .m-ic .hi { width: 1.25rem; height: 1.25rem; }
+.sh-ic { display: inline-grid; place-items: center; vertical-align: -.1em; color: var(--hc); }
+.sh-ic .hi { width: .9em; height: .9em; stroke-width: 1.6; }
+.ms-habit { display: inline-flex; align-items: center; gap: .4rem; }
+.ms-ic .hi { width: 1.2rem; height: 1.2rem; color: var(--mc); }

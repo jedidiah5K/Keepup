@@ -1,4 +1,6 @@
 import '@fontsource-variable/geist';
+import { hi } from './ui/hicons.js';
+import { COLOURS } from './lib/theme.js';
 import '@fontsource-variable/geist-mono';
 import '@fontsource/instrument-serif/400.css';
 import '@fontsource/instrument-serif/400-italic.css';
@@ -88,7 +90,7 @@ function habitMenu(id) {
   const t = today(), d = Today.view.day && Today.view.day <= t ? Today.view.day : t, lock = !editable(d);
   const body = () => {
     const st = Today.streakOf(h), c = countFor(id, d), wk = st.unit === 'weeks';
-    return `<h2 class="sheet-h"><span aria-hidden="true">${esc(h.icon)}</span> ${esc(h.name)}</h2>
+    return `<h2 class="sheet-h"><span class="sh-ic" aria-hidden="true" style="--hc:${COLOURS[h.colour]}">${hi(h.icon)}</span> ${esc(h.name)}</h2>
     <div class="hm-stats"><div><b>${st.current}</b><span class="muted small">${wk ? 'week' : 'day'} streak</span></div><div><b>${st.longest}</b><span class="muted small">best</span></div><div><b>${Object.values(state.checkins[id] || {}).filter(n => n >= h.target_count).length}</b><span class="muted small">all time</span></div></div>
     ${h.kind === 'count' && !lock ? `<div class="fld"><span>${d === t ? 'Today' : 'That day'}</span><div class="stepper" role="group" aria-label="Count"><button type="button" data-m="minus" aria-label="One less" ${c ? '' : 'disabled'}>−</button><b aria-live="polite">${c}</b> of ${h.target_count}<button type="button" data-m="plus" aria-label="One more">+</button></div></div>` : ''}
     <div class="stack"><button class="btn wide" data-m="share">${I.share} Share streak</button>

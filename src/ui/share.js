@@ -3,6 +3,7 @@
 import { state, today, countFor } from '../lib/store.js';
 import { addDays } from '../lib/dates.js';
 import { COLOURS } from '../lib/theme.js';
+import { hiSVG } from './hicons.js';
 
 const W = 1080, H = 1350;
 
@@ -42,7 +43,12 @@ export async function drawCard(h, st) {
 
   // Habit
   g.fillStyle = ink; g.font = `500 54px ${sans}`;
-  g.fillText(`${h.icon}  ${clip(g, h.name, W - 200)}`, 84, 700);
+  const svg = hiSVG(h.icon, col);
+  if (svg) {
+    const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    try { await img.decode(); g.drawImage(img, 80, 652, 64, 64); } catch (e) {}
+    g.fillText(clip(g, h.name, W - 260), 168, 700);
+  } else g.fillText(`${h.icon}  ${clip(g, h.name, W - 200)}`, 84, 700);
   g.fillStyle = muted; g.font = `500 30px ${mono}`;
   spaced(g, `BEST ${st.longest} ${st.unit === 'weeks' ? 'WEEKS' : 'DAYS'}`, 84, 760, 3);
 
