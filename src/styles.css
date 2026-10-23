@@ -54,7 +54,8 @@ h2.display { font-size: 2rem; }
 .row { display: flex; align-items: center; } .gap { gap: .6rem; } .grow { flex: 1; }
 .stack { display: grid; gap: .6rem; }
 .eyebrow { font: 500 .7rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.link { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.link { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.toast .link, .recap .link { color: inherit; }
 
 /* ---------- frame ---------- */
 #app { min-height: 100dvh; }
