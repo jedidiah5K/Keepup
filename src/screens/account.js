@@ -20,6 +20,7 @@ export function openAuth(mode = 'up') {
     <form class="auth" data-mode="${m}" novalidate>
       ${m !== 'newpw' ? `<label class="fld"><span>Email</span><input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254" autofocus></label>` : ''}
       ${m !== 'reset' ? `<label class="fld"><span>Password</span><span class="pw-wrap"><input name="pw" type="password" minlength="8" maxlength="72" required autocomplete="${m === 'in' ? 'current-password' : 'new-password'}"><button type="button" class="pw-eye" data-eye aria-label="Show password" aria-pressed="false">${EYE}</button></span></label>` : ''}
+      ${m === 'up' || m === 'newpw' ? `<label class="fld"><span>Confirm password</span><span class="pw-wrap"><input name="pw2" type="password" minlength="8" maxlength="72" required autocomplete="new-password"><button type="button" class="pw-eye" data-eye aria-label="Show password" aria-pressed="false">${EYE}</button></span></label>` : ''}
       ${m === 'up' ? '<label class="agree"><input type="checkbox" name="age" required> <span>I’m 13 or older and agree to the <a class="link" href="/terms.html" target="_blank">terms</a> and <a class="link" href="/privacy.html" target="_blank">privacy policy</a>.</span></label>' : ''}
       <p class="auth-err" role="alert"></p>
       <button class="btn wide" type="submit">${MODES[m].btn}</button>
@@ -44,6 +45,7 @@ export function openAuth(mode = 'up') {
         const fail = t => { err.textContent = t; f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake'); };
         if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('That email doesn’t look right.');
         if (f.pw && pw.length < 8) return fail('Use at least 8 characters.');
+        if (f.pw2 && f.pw2.value !== pw) return fail('The passwords don’t match.');
         if (m === 'up' && !f.age.checked) return fail('Please confirm you’re 13 or older.');
         btn.disabled = true; btn.classList.add('busy'); err.textContent = '';
         let res;
