@@ -67,3 +67,12 @@ export function mountScene(root) {
   const step = t => { const f = Math.min(1, (t - t0) / dur), q = from + (to - from) * ease(f); place(q); if (f < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
 }
+
+// Moves the trail and hiker to a new point without redrawing the scene (intro cards use this).
+export function climbTo(root, pct) {
+  const svg = root.querySelector('.scene'); if (!svg) return;
+  const path = svg.querySelector('.trail');
+  path.style.animation = 'none'; path.style.transition = 'stroke-dasharray .9s cubic-bezier(.2, .8, .2, 1)';
+  path.style.setProperty('--pct', pct); svg.dataset.pct = pct;
+  mountScene(root);
+}
