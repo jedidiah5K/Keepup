@@ -8,6 +8,9 @@ import { esc, openSheet, closeSheet, confirmSheet, toast } from '../ui/sheets.js
 import { cloud, syncLine } from '../lib/session.js';
 import { canInstall, installed } from '../ui/install.js';
 import { pushState, enablePush, disablePush } from '../lib/push.js';
+import { TROPHIES } from '../lib/trophies.js';
+import { medal, myTrophies } from '../ui/medal.js';
+import { streakOf } from './today.js';
 
 const toggle = (key, label, sub = '') => `<label class="row-set"><span><span>${label}</span>${sub ? `<span class="muted small">${sub}</span>` : ''}</span>
   <input type="checkbox" role="switch" class="switch" data-a="pref" data-k="${key}" ${state.profile[key] !== false ? 'checked' : ''}></label>`;
@@ -15,6 +18,7 @@ const toggle = (key, label, sub = '') => `<label class="row-set"><span><span>${l
 export function render() {
   const p = state.profile;
   return `<header class="top"><div><div class="eyebrow">Me</div><h1>${p.display_name ? `<em>${esc(p.display_name)}</em>` : 'You'}</h1></div></header>
+    ${card()}
     <section class="group"><div class="g-h">Account</div>
       ${cloud.user ? `<div class="row-set"><span><span>${esc(cloud.user.email)}</span><span class="muted small sync-line ${cloud.error ? 'warn' : ''}">${syncLine()}</span></span><button class="chip" data-a="syncNow">Sync</button></div>
         <button class="row-set" data-a="signOut"><span>Sign out</span>${I.right}</button>`
@@ -51,6 +55,28 @@ export function render() {
     </section>
     <p class="beta-note"><span class="beta-tag">Beta</span><span>KeepUp is in beta, so <b>everything is free for now</b>. Unlimited habits, streaks and squads stay free forever. Some extras (like more looks) may become Pro later, and we’ll always ask first.</span></p>
     <p class="muted small center mt3">KeepUp · made for people who keep going</p>`;
+}
+
+// A small record of you: since when, ticks, best streak, and the latest trophies.
+function card() {
+  const hs = state.habits; if (!hs.length) return '';
+  let ticks = 0;
+  for (const h of hs) for (const n of Object.values(state.checkins[h.id] || {})) if (n >= (h.target_count || 1)) ticks++;
+  const best = Math.max(0, ...hs.map(h => streakOf(h).longest || 0));
+  const since = hs.reduce((m, h) => (h.start_date < m ? h.start_date : m), hs[0].start_date);
+  const got = myTrophies(), mine = TROPHIES.filter(t => got.has(t.id));
+  const fmt = n => n.toLocaleString();
+  return `<section class="me-card">
+    <dl class="me-stats">
+      <div><dt>Since</dt><dd>${esc(new Date(since + 'T12:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' }))}</dd></div>
+      <div><dt>Ticks</dt><dd>${fmt(ticks)}</dd></div>
+      <div><dt>Best streak</dt><dd>${best}</dd></div>
+    </dl>
+    <button class="me-medals" data-a="tab" data-tab="stats" aria-label="${mine.length} of ${TROPHIES.length} trophies. Open stats.">
+      <span class="me-m-row" aria-hidden="true">${mine.length ? mine.slice(-4).reverse().map(t => medal(t, true, 34)).join('') : medal(TROPHIES[0], false, 34)}</span>
+      <span class="muted small">${mine.length ? `${mine.length} of ${TROPHIES.length} trophies` : 'No trophies yet. Three days in a row gets the first.'}</span>${I.right}
+    </button>
+  </section>`;
 }
 
 export function openManage(rerender) {

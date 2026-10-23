@@ -705,3 +705,16 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .nudged.fived svg { color: var(--done); animation: slap .7s var(--spring) .4s both; }
 @keyframes slap { 0% { transform: rotate(0) scale(1); } 40% { transform: rotate(-18deg) scale(1.3); } 100% { transform: rotate(0) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .chip.five.slap svg, .nudged.fived svg, .m-state.ok svg { animation: none; } }
+
+/* Me: a small record card under the name */
+.me-card { margin: -.25rem 0 1.75rem; border-radius: 20px; box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; }
+.me-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
+.me-stats > div { padding: .9rem .95rem .85rem; }
+.me-stats > div + div { box-shadow: inset 1.5px 0 0 var(--line); }
+.me-stats dt { font: 500 .62rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.me-stats dd { margin: .45rem 0 0; font-family: var(--serif); font-size: 1.7rem; line-height: 1; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.me-medals { display: flex; align-items: center; gap: .7rem; width: 100%; padding: .7rem .95rem; box-shadow: inset 0 1.5px 0 var(--line); text-align: left; }
+.me-medals .muted { flex: 1; }
+.me-medals > svg { width: 18px; height: 18px; color: var(--muted); flex: none; }
+.me-m-row { display: flex; flex: none; }
+.me-m-row .medal + .medal { margin-left: -9px; }
