@@ -121,7 +121,7 @@ export function render() {
           <button class="btn mt3" data-a="newHabit">${I.plus} Add a habit</button></div>`
         : !list.length ? `<div class="empty"><p class="muted">Nothing scheduled for this day. Enjoy the rest.</p></div>`
         : `<ul class="habits ${firstRun() ? 'coach' : ''}" aria-label="Habits for ${fmtDay(d)}">${list.map((h, i) => habitRow(h, d, i)).join('')}</ul>`}
-      ${isToday ? pushAsk(d) : ''}
+      ${isToday ? pushAsk(d) || squadAsk() : ''}
       ${isToday ? weekSummary() : ''}
       ${isToday && hs.length && canInstall() && !nudgeHidden() ? installCard() : ''}
     </div>
@@ -198,6 +198,23 @@ function pushAsk(d) {
     <div class="grow"><b>Nudge me tomorrow?</b><span class="muted small">At ${esc(at)}, only if something’s left.</span></div>
     <button class="btn sm" data-a="pushYes">Yes</button>
     <button class="x" data-a="pushNo" aria-label="Not now">×</button>
+  </aside>`;
+}
+
+// The hardest step for a squad is the first invite. Ask once things are going well (a 3-day streak),
+// not on day one, and at most every two weeks.
+const SQASK = 'keepup:sqask';
+export const squadLater = () => { try { localStorage.setItem(SQASK, String(Date.now())); } catch (e) {} };
+function squadAsk() {
+  try {
+    if (localStorage.getItem('keepup:insquad') === '1' || Date.now() - (+localStorage.getItem(SQASK) || 0) < 14 * 864e5) return '';
+  } catch (e) { return ''; }
+  const best = Math.max(0, ...activeHabits().map(h => streakOf(h).current));
+  if (best < 3) return '';
+  return `<aside class="install-card squad-ask"><span class="faces sm" aria-hidden="true"><span style="--fc:#FF5A1F"></span><span style="--fc:#7B4BC4"></span><span style="--fc:#1F9D7A"></span></span>
+    <div class="grow"><b>Better with a friend</b><span class="muted small">${best} days in. Bring a friend, keep each other going.</span></div>
+    <button class="btn sm" data-a="squadYes">Invite</button>
+    <button class="x" data-a="squadNo" aria-label="Not now">×</button>
   </aside>`;
 }
 

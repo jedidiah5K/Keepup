@@ -157,6 +157,8 @@ const ACTIONS = {
     } catch (e) { toast(navigator.onLine ? 'Couldn’t turn notifications on just now. Try again from Me.' : 'You’re offline. Turn them on from Me later.'); }
     render();
   },
+  squadYes: () => { Today.squadLater(); swap(() => { NAV.tab = 'squad'; render(); }); setTimeout(() => { if (document.querySelector('[data-a="sqCreate"]')) ACTIONS.sqCreate(); }, 900); },
+  squadNo: el => { Today.squadLater(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
   pushNo: el => { Today.notNow(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };

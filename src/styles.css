@@ -750,3 +750,6 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .wd-cols .best small { color: var(--ink); }
 .wd-line { margin: 0; font-size: .92rem; line-height: 1.45; color: var(--muted); }
 .wd-line b { color: var(--ink); font-weight: 600; }
+.squad-ask .faces { flex: none; padding-right: .7rem; margin: 0; }
+.squad-ask .faces span { width: 1.9rem; height: 1.9rem; box-shadow: 0 0 0 2.5px var(--surface); margin-right: -.6rem; }
+@media (max-width: 359px) { .squad-ask .faces { display: none; } }
