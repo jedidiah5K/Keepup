@@ -82,7 +82,7 @@ function habitRow(h, d, i) {
       <span class="h-ic" aria-hidden="true">${hi(h.icon)}</span>
       <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk || rp || /^Due (today|tomorrow)/.test(due) ? 'risk' : ''}">${rp ? rpLine : comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
     </button>
-    <span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>
+    ${!st.current && !st.longest && !done ? '' : `<span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>`}
     <button class="tick ${h.kind === 'count' ? 'count' : ''}" data-a="tick" data-id="${h.id}" data-d="${d}" aria-label="${esc(label)}" aria-pressed="${done}" ${lock ? 'disabled' : ''} style="--pc:${pc};--pp:${pp}">
       ${h.kind === 'count' ? `<svg class="cring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" pathLength="100"/></svg>` : ''}
       <span class="tick-fill" aria-hidden="true"></span>
@@ -121,6 +121,7 @@ export function render() {
           <button class="btn mt3" data-a="newHabit">${I.plus} Add a habit</button></div>`
         : !list.length ? `<div class="empty"><p class="muted">Nothing scheduled for this day. Enjoy the rest.</p></div>`
         : `<ul class="habits ${firstRun() ? 'coach' : ''}" aria-label="Habits for ${fmtDay(d)}">${list.map((h, i) => habitRow(h, d, i)).join('')}</ul>`}
+      ${isToday ? pushAsk(d) : ''}
       ${isToday ? weekSummary() : ''}
       ${isToday && hs.length && canInstall() && !nudgeHidden() ? installCard() : ''}
     </div>
@@ -182,8 +183,27 @@ const installCard = () => `<aside class="install-card">
     <button class="x" data-a="hideInstall" aria-label="Not now">×</button>
   </aside>`;
 
+// Ask for notifications right after someone ticks something (not out of nowhere), at most once a week.
+// Studies of permission prompts: asking after a meaningful action gets far more yeses.
+const ASKED = 'keepup:pushask';
+let pushNow = null;
+export const askedRecently = () => { try { return Date.now() - (+localStorage.getItem(ASKED) || 0) < 7 * 864e5; } catch (e) { return true; } };
+export const notNow = () => { try { localStorage.setItem(ASKED, String(Date.now())); } catch (e) {} };
+function pushAsk(d) {
+  if (pushNow !== 'off' || askedRecently()) return '';
+  if (!activeHabits().some(h => countFor(h.id, d) > 0)) return '';
+  const t = state.profile.evening_reminder_at || '21:00';
+  const at = new Date(`2000-01-01T${t}`).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `<aside class="install-card push-ask"><span class="ic-b" aria-hidden="true">${I.bell}</span>
+    <div class="grow"><b>Nudge me tomorrow?</b><span class="muted small">At ${esc(at)}, only if something’s left.</span></div>
+    <button class="btn sm" data-a="pushYes">Yes</button>
+    <button class="x" data-a="pushNo" aria-label="Not now">×</button>
+  </aside>`;
+}
+
 export function afterRender(root, rerender) {
   mountScene(root); view.just = null;
+  if (pushNow === null && rerender) import('../lib/push.js').then(m => m.pushState()).then(st => { const was = pushNow; pushNow = st; if (st === 'off' && was !== st && !askedRecently()) rerender(); }).catch(() => {});
   // Swipe the week strip to go back a week (or forward again, never past today).
   const wk = root.querySelector('.week'); if (!wk || !rerender) return;
   let x0 = null, y0 = 0;

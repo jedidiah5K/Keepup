@@ -6,7 +6,7 @@ import '@fontsource/instrument-serif/400.css';
 import '@fontsource/instrument-serif/400-italic.css';
 import './styles.css';
 import './ui/dragsort.js';
-import { state, load } from './lib/store.js';
+import { state, load, setProfile } from './lib/store.js';
 import { applyTheme } from './lib/theme.js';
 import { I } from './ui/icons.js';
 import { closeSheet, toast, openSheet, esc } from './ui/sheets.js';
@@ -148,6 +148,16 @@ const ACTIONS = {
     openSheet(`<div class="trophy-sheet">${medal(t, on, 120)}<h2 class="sheet-h serif-h">${esc(t.name)}</h2><p class="muted">${on ? `Earned. ${esc(t.how)}.` : `Not yet. ${esc(t.how)}.`}</p></div>`, { label: t.name });
   },
   hideRecap: el => { const c = el.closest('.recap'); Today.hideRecap(c.dataset.w); c.classList.add('bye'); setTimeout(render, 280); },
+  pushYes: async el => {
+    el.disabled = true; Today.notNow();
+    try {
+      const st = await (await import('./lib/push.js')).enablePush();
+      if (st === 'on') { if (!state.profile.evening_reminder_at) setProfile({ evening_reminder_at: '21:00' }); SOUNDS.theme(); toast('Done. One nudge in the evening, only if you need it.'); }
+      else toast('Notifications are blocked. You can allow them in your phone’s Settings.');
+    } catch (e) { toast(navigator.onLine ? 'Couldn’t turn notifications on just now. Try again from Me.' : 'You’re offline. Turn them on from Me later.'); }
+    render();
+  },
+  pushNo: el => { Today.notNow(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };
 
