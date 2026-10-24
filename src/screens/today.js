@@ -28,7 +28,8 @@ function habitLists(list, d) {
   return PARTS.map(([k, name]) => {
     const hs = list.filter(h => (h.time_of_day || null) === k); if (!hs.length) return '';
     const now = d === today() && k === partNow(), left = hs.filter(h => countFor(h.id, d) < h.target_count).length;
-    const out = `<h3 class="tod ${now ? 'now' : ''}"><span>${name}</span><small>${left ? `${left} to go` : 'done'}</small></h3>${ul(hs, n, `${name} habits`)}`;
+    const pop = !left && view.partDone === (k || 'any') ? 'pop' : '';
+    const out = `<h3 class="tod ${now ? 'now' : ''} ${left ? '' : 'all'} ${pop}"><span>${name}</span><small>${left ? `${left} to go` : `${I.check} done`}</small></h3>${ul(hs, n, `${name} habits`)}`;
     n += hs.length; return out;
   }).join('');
 }
@@ -252,6 +253,12 @@ export function afterRender(root, rerender) {
 }
 
 // Tap: yes/no flips, count adds one (and wraps back to 0 after the target, so a slip is fixable).
+// Ticking the last habit of a part of the day (when Today is grouped) gets its own small moment.
+function partFinished(h, d) {
+  const list = activeHabits().filter(x => dueOn(x, d));
+  if (!list.some(x => x.time_of_day)) return false;
+  return list.filter(x => (x.time_of_day || null) === (h.time_of_day || null)).every(x => countFor(x.id, d) >= x.target_count);
+}
 export function tick(btn, rerender) {
   const id = btn.dataset.id, d = btn.dataset.d, h = state.habits.find(x => x.id === id); if (!h) return;
   const c = countFor(id, d), wasDone = c >= h.target_count;
@@ -269,6 +276,7 @@ export function tick(btn, rerender) {
     if (before.repair && st.repaired.length > before.repaired.length) setTimeout(() => celebrate(st.current, h.name, COLOURS[h.colour], 'Streak repaired. Welcome back.', hi(h.icon)), 450);
     else if (hit) setTimeout(() => celebrate(st.current, h.name, COLOURS[h.colour], null, hi(h.icon)), 450);
     else if (all && !allBefore) setTimeout(() => { SOUNDS.summit(); confetti(36); buzz(30); }, 650);
+    else if (partFinished(h, d)) { view.partDone = h.time_of_day || 'any'; setTimeout(() => { SOUNDS.step(6); buzz(20); }, 380); setTimeout(() => { view.partDone = null; }, 1500); }
     checkNew(hit || before.repair ? 3900 : all && !allBefore ? 2600 : 1200);
   } else if (next > c) { SOUNDS.plus(); buzz(8); }
   else { SOUNDS.undo(); buzz(8); toast(`<span class="t-one">Unticked ${esc(h.name)}</span><button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="${c}">Undo</button>`); }
