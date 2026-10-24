@@ -192,7 +192,7 @@ h2.display { font-size: 2rem; }
   display: inline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   background: linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0 1.5px; transition: color .3s;
 }
-.h-meta { font: 400 .75rem/1 var(--mono); color: var(--muted); letter-spacing: .01em; }
+.h-meta { font: 400 .75rem/1.2 var(--mono); color: var(--muted); letter-spacing: .01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .habit.done .h-name > span { color: var(--muted); background-size: 100% 1.5px; }
 .habit.done.just .h-name > span { animation: strike .45s var(--out) .15s both; }
 @keyframes strike { from { background-size: 0 1.5px; } }
@@ -756,3 +756,12 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 .sq-frz { display: flex; align-items: center; gap: .4rem; margin: .25rem 0 .35rem; font-size: .85rem; color: color-mix(in srgb, var(--freeze) 70%, var(--ink)); }
 .sq-frz svg { flex: none; }
 .off-ic { display: inline-grid; place-items: center; width: 3.2rem; height: 3.2rem; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-2); color: var(--muted); margin-bottom: .75rem; }
+
+/* Today: parts of the day */
+.tod { display: flex; align-items: baseline; justify-content: space-between; margin: 1.4rem 0 .35rem; font: 500 .7rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tod:first-of-type { margin-top: .4rem; }
+.tod small { font-size: .68rem; letter-spacing: .04em; text-transform: none; }
+.tod.now span { color: var(--ink); display: inline-flex; align-items: center; gap: .45rem; }
+.tod.now span::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.tod + .habits { margin-bottom: .5rem; }
+.seg.four button { font-size: .8rem; padding: 0 .2rem; }

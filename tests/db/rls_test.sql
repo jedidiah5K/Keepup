@@ -187,3 +187,7 @@ delete from keepup_push_sent;
 update keepup_habits set end_date = start_date where id = '30000000-0000-0000-0000-0000000000d1';
 select pg_temp.check(not exists (select 1 from keepup_due_reminders() where title = 'Water'), 'no reminder after a habit has ended');
 select pg_temp.fails($$update keepup_habits set end_date = start_date - 1 where id = '30000000-0000-0000-0000-0000000000d1'$$, 'a habit cannot end before it starts');
+update keepup_habits set time_of_day = 'morning', cue = 'After my morning coffee' where id = '30000000-0000-0000-0000-0000000000d1';
+select pg_temp.check((select time_of_day from keepup_habits where id = '30000000-0000-0000-0000-0000000000d1') = 'morning', 'a habit can have a part of the day and a cue');
+select pg_temp.fails($$update keepup_habits set time_of_day = 'night' where id = '30000000-0000-0000-0000-0000000000d1'$$, 'only morning, afternoon or evening');
+select pg_temp.fails(format($$update keepup_habits set cue = %L where id = '30000000-0000-0000-0000-0000000000d1'$$, repeat('x', 61)), 'a cue is at most 60 characters');

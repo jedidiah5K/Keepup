@@ -18,6 +18,21 @@ const fmtDay = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { we
 
 // Is the habit on the list for this day? "X a week" habits show every day.
 export const dueOn = (h, d) => d >= h.start_date && (!h.end_date || d <= h.end_date) && (h.schedule_type !== 'weekdays' || h.schedule_days.includes(isoWeekday(d)));
+// One list, or (when any habit has a part of the day) Morning / Afternoon / Evening / Any time.
+const PARTS = [['morning', 'Morning'], ['afternoon', 'Afternoon'], ['evening', 'Evening'], [null, 'Any time']];
+const partNow = () => { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; };
+function habitLists(list, d) {
+  const ul = (hs, start, label) => `<ul class="habits ${firstRun() && !start ? 'coach' : ''}" aria-label="${esc(label)}">${hs.map((h, i) => habitRow(h, d, start + i)).join('')}</ul>`;
+  if (!list.some(h => h.time_of_day)) return ul(list, 0, `Habits for ${fmtDay(d)}`);
+  let n = 0;
+  return PARTS.map(([k, name]) => {
+    const hs = list.filter(h => (h.time_of_day || null) === k); if (!hs.length) return '';
+    const now = d === today() && k === partNow(), left = hs.filter(h => countFor(h.id, d) < h.target_count).length;
+    const out = `<h3 class="tod ${now ? 'now' : ''}"><span>${name}</span><small>${left ? `${left} to go` : 'done'}</small></h3>${ul(hs, n, `${name} habits`)}`;
+    n += hs.length; return out;
+  }).join('');
+}
+
 // Habits with an end date (an assignment, an exam): count down to it.
 export function dueLine(h, d = today()) {
   if (!h.end_date || d > h.end_date) return '';
@@ -68,7 +83,8 @@ function habitRow(h, d, i) {
   const frozenNow = st.current > 0 && st.frozen.length && st.frozen[st.frozen.length - 1] >= addDays(d, -6);
   const unit = st.unit === 'weeks' ? (st.current === 1 ? 'wk' : 'wks') : (st.current === 1 ? 'day' : 'days');
   const base = h.schedule_type === 'x_per_week' ? `${st.weekDone} of ${st.weekTarget} this week` : h.kind === 'count' ? `${c} of ${h.target_count}` : h.schedule_type === 'weekdays' ? 'Some days' : 'Every day';
-  const due = dueLine(h, d), sub = due ? (h.schedule_type === 'x_per_week' || h.kind === 'count' ? `${base} · ${due}` : due) : base;
+  const plain = h.schedule_type !== 'x_per_week' && h.kind !== 'count', extra = dueLine(h, d) || (!done && h.cue) || '';
+  const due = dueLine(h, d), sub = extra ? (plain ? extra : `${base} · ${extra}`) : base;
   // Lost a streak? Most people quit right here. Say something kind and keep their best on show.
   const comeback = !st.current && st.longest >= 3 && h.schedule_type !== 'x_per_week' && !c;
   // Evening, streak going, not done yet: say what's at stake.
@@ -120,7 +136,7 @@ export function render() {
           <p class="muted">Small and daily beats big and rare. Add as many as you like, free, always.</p>
           <button class="btn mt3" data-a="newHabit">${I.plus} Add a habit</button></div>`
         : !list.length ? `<div class="empty"><p class="muted">Nothing scheduled for this day. Enjoy the rest.</p></div>`
-        : `<ul class="habits ${firstRun() ? 'coach' : ''}" aria-label="Habits for ${fmtDay(d)}">${list.map((h, i) => habitRow(h, d, i)).join('')}</ul>`}
+        : habitLists(list, d)}
       ${isToday ? pushAsk(d) || squadAsk() : ''}
       ${isToday ? weekSummary() : ''}
       ${isToday && hs.length && canInstall() && !nudgeHidden() ? installCard() : ''}

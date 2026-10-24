@@ -11,17 +11,20 @@ const KEY = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_GLmm-oqwG3az6sy
 export const sb = createClient(URL, KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'keepup-auth', flowType: 'implicit' } });
 
 const PROFILE_COLS = ['display_name', 'timezone', 'week_start', 'theme', 'sounds_on', 'haptics_on', 'evening_reminder_at'];
-const HABIT_COLS = ['id', 'name', 'icon', 'colour', 'kind', 'target_count', 'schedule_type', 'schedule_days', 'times_per_week', 'reminder_time', 'sort_order', 'start_date', 'end_date', 'archived_at', 'created_at', 'updated_at'];
-// end_date arrived with the setup-6 database update. Until that's pasted, leave it out rather than
-// have the server refuse the whole habit.
-let noEnd = false;
-const missingEnd = e => /end_date/.test(e?.message || '');
-const habitCols = () => noEnd ? HABIT_COLS.filter(c => c !== 'end_date') : HABIT_COLS;
-async function upsertHabit(row) {
-  let res = await sb.from('keepup_habits').upsert(pick(row, habitCols()));
-  if (res.error && missingEnd(res.error)) { noEnd = true; res = await sb.from('keepup_habits').upsert(pick(row, habitCols())); }
+const HABIT_COLS = ['id', 'name', 'icon', 'colour', 'kind', 'target_count', 'schedule_type', 'schedule_days', 'times_per_week', 'reminder_time', 'sort_order', 'start_date', 'end_date', 'time_of_day', 'cue', 'archived_at', 'created_at', 'updated_at'];
+// Columns added by later database updates (setup 6, setup 7). Until one is pasted, leave that column
+// out rather than have the server refuse the whole habit; this phone keeps its own copy.
+const NEWER = ['end_date', 'time_of_day', 'cue'];
+const missing = new Set();
+const missingCol = e => NEWER.find(c => !missing.has(c) && new RegExp(`\\b${c}\\b`).test(e?.message || ''));
+const habitCols = () => HABIT_COLS.filter(c => !missing.has(c));
+// Runs q with the columns the server has, dropping any it says it doesn't know (one at a time).
+async function withCols(q) {
+  let res = await q(habitCols());
+  for (let c; res.error && (c = missingCol(res.error));) { missing.add(c); res = await q(habitCols()); }
   return res;
 }
+const upsertHabit = row => withCols(cols => sb.from('keepup_habits').upsert(pick(row, cols)));
 const pick = (o, cols) => Object.fromEntries(cols.filter(k => k in o).map(k => [k, o[k]]));
 const profileRow = () => ({ id: cloud.user.id, ...pick(state.profile, PROFILE_COLS) });
 const changed = () => window.dispatchEvent(new Event('keepup:cloud'));
@@ -56,7 +59,7 @@ export async function sync({ first = false, quiet = false } = {}) {
       const checkins = [];
       for (const [habit_id, days] of Object.entries(state.checkins)) for (const [date, count] of Object.entries(days)) if (count > 0) checkins.push({ habit_id, date, count });
       await must(sb.rpc('keepup_import', { p_habits: state.habits.map(h => pick(h, HABIT_COLS)), p_checkins: checkins }));
-      for (const h of state.habits) if (h.end_date) await upsertHabit(h);   // the import doesn't know end dates
+      for (const h of state.habits) if (NEWER.some(c => h[c])) await upsertHabit(h);   // the import doesn't know the newer columns
       // Deletes made before signing in still need to happen; everything else is now on the server.
       state.pending = state.pending.filter(p => p.op === 'delete' && p.table !== 'keepup_profiles');
       state.syncedUser = cloud.user.id;
@@ -98,9 +101,7 @@ async function flush() {
 async function pull() {
   if (state.pending.length) return false;
   const prof = await must(sb.from('keepup_profiles').select(PROFILE_COLS.join(',')).maybeSingle());
-  let hr = await sb.from('keepup_habits').select(habitCols().join(',')).eq('user_id', cloud.user.id);
-  if (hr.error && missingEnd(hr.error)) { noEnd = true; hr = await sb.from('keepup_habits').select(habitCols().join(',')).eq('user_id', cloud.user.id); }
-  const habits = await must(hr);
+  const habits = await must(withCols(cols => sb.from('keepup_habits').select(cols.join(',')).eq('user_id', cloud.user.id)));
   const rows = [];
   for (let from = 0; ; from += 1000) {
     const page = await must(sb.from('keepup_checkins').select('habit_id,date,count').eq('user_id', cloud.user.id).order('date').range(from, from + 999));
@@ -112,8 +113,12 @@ async function pull() {
   if (!br.error) state.breaks = br.data;
   // Someone who already set KeepUp up on another phone skips the first-run steps here.
   if (prof) Object.assign(state.profile, prof, { evening_reminder_at: prof.evening_reminder_at?.slice(0, 5) ?? null, onboarded: state.profile.onboarded || habits.length > 0 || !!prof.display_name });
-  const ends = Object.fromEntries(state.habits.map(h => [h.id, h.end_date]));
-  state.habits = habits.map(h => ({ ...h, reminder_time: h.reminder_time?.slice(0, 5) ?? null, end_date: noEnd ? ends[h.id] || null : h.end_date ?? null }));
+  const mine = Object.fromEntries(state.habits.map(h => [h.id, h]));
+  state.habits = habits.map(h => {
+    const x = { ...h, reminder_time: h.reminder_time?.slice(0, 5) ?? null };
+    for (const c of NEWER) if (missing.has(c) || !(c in h)) x[c] = mine[h.id]?.[c] ?? null; else x[c] = h[c] ?? null;
+    return x;
+  });
   const ck = {}; for (const r of rows) (ck[r.habit_id] ||= {})[r.date] = r.count;
   state.checkins = ck;
   return true;
