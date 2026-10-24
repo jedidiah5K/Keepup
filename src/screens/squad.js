@@ -35,6 +35,10 @@ export function render() {
       <p class="muted small mt2 center">Already have one? <button class="link" data-a="auth" data-mode="in">Sign in</button></p>`);
   const SQ = mod?.SQ;
   if (!SQ || !SQ.loaded) return `<header class="top"><div><div class="eyebrow">Squad</div><h1>Your <em>squad</em></h1></div></header><div class="skel" role="status" aria-label="Loading your squad"><i class="sk-hero"></i>${'<div class="sk-row"><i class="sk-face"></i><span><i></i><i></i></span></div>'.repeat(3)}</div>`;
+  // Already in a squad but can't reach it: don't show the "make a squad" pitch, just say what's up.
+  let inSquad = false; try { inSquad = localStorage.getItem('keepup:insquad') === '1'; } catch (e) {}
+  if (SQ.error && !SQ.squad && inSquad) return `<header class="top"><div><div class="eyebrow">Squad</div><h1>Your <em>squad</em></h1></div></header>
+    <div class="empty"><span class="off-ic" aria-hidden="true">${I.squad}</span><p class="muted">${esc(SQ.error)}</p><button class="btn mt3" data-a="sqReload">Try again</button></div>`;
   if (SQ.error && !SQ.squad) return pitch(`<p class="note">${esc(SQ.error)}</p><button class="btn wide mt3" data-a="sqReload">Try again</button>`);
   if (!SQ.squad) return pitch(`<div class="stack mt3"><button class="btn wide" data-a="sqCreate">Create a squad</button><button class="btn ghost wide" data-a="sqJoin">Join with a code</button></div>`);
   return board(SQ);

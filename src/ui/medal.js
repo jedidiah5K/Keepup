@@ -27,7 +27,7 @@ export function medal(t, on, size = 64) {
   return `<svg class="medal ${on ? 'on' : ''}" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" style="--mt:${tint}">
     ${on ? `<polygon points="${rim}" fill="${tint}"/><circle cx="32" cy="32" r="22.5" fill="none" stroke="${ink}" stroke-opacity=".35" stroke-width="1"/>`
       : `<circle cx="32" cy="32" r="27" fill="none" stroke="var(--line-2)" stroke-width="1.5" stroke-dasharray="3 4"/>`}
-    <g opacity="${on ? 1 : .55}">${glyph(t, ink)}</g></svg>`;
+    <g opacity="1">${glyph(t, ink)}</g></svg>`;
 }
 
 const inSquad = () => { try { return localStorage.getItem('keepup:insquad') === '1'; } catch (e) { return false; } };

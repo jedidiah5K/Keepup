@@ -755,3 +755,4 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 @media (max-width: 359px) { .squad-ask .faces { display: none; } }
 .sq-frz { display: flex; align-items: center; gap: .4rem; margin: .25rem 0 .35rem; font-size: .85rem; color: color-mix(in srgb, var(--freeze) 70%, var(--ink)); }
 .sq-frz svg { flex: none; }
+.off-ic { display: inline-grid; place-items: center; width: 3.2rem; height: 3.2rem; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-2); color: var(--muted); margin-bottom: .75rem; }
