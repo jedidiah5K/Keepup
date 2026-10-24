@@ -54,7 +54,17 @@ function render() {
   SCREENS[NAV.tab].afterRender?.(scr, render);
   if (!same) countUp(scr);
   parallax(scr);
+  badge();
 }
+
+// The app icon on the home screen shows how many habits are left today (iPhone needs notifications on).
+function badge() {
+  if (!('setAppBadge' in navigator) || !cloud.user || !state.profile.onboarded) return;
+  const n = Today.leftToday();
+  (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+}
+addEventListener('keepup:changed', badge);
+document.addEventListener('visibilitychange', badge);
 
 // Change screens with a soft cross-fade where the browser supports View Transitions.
 function swap(fn) {

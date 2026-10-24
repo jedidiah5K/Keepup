@@ -44,6 +44,12 @@ export function dueLine(h, d = today()) {
 }
 export const streakOf = (h, upTo = today()) => habitStreak({ ...h, start: h.start_date }, state.checkins[h.id] || {}, { today: h.end_date && h.end_date < upTo ? h.end_date : upTo, weekStart: state.profile.week_start, freezesPerWeek: 1, breaks: state.breaks });
 
+// How many of today's habits are still open (for the home-screen badge).
+export function leftToday() {
+  const t = today(); if (currentBreak(t)) return 0;
+  return activeHabits().filter(h => owed(h, t) && h.schedule_type !== 'x_per_week' && countFor(h.id, t) < h.target_count).length;
+}
+
 function dayProgress(d) {
   const hs = activeHabits().filter(h => owed(h, d) && h.schedule_type !== 'x_per_week');
   if (!hs.length) return null;
