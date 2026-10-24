@@ -76,6 +76,14 @@ export function reorder(ids) {
 export const editable = d => { const t = today(); return d <= t && d >= addDaysLocal(t, -7); };
 const addDaysLocal = (d, n) => new Date(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) + n * 864e5).toISOString().slice(0, 10);
 
+// Skipping a day (ill, travelling) keeps a row with count 0: it neither counts nor breaks the streak.
+export const isSkipped = (habitId, d) => state.checkins[habitId]?.[d] === 0;
+export function skipDay(habitId, d) {
+  if (!editable(d)) return false;
+  (state.checkins[habitId] ||= {})[d] = 0;
+  queue('upsert', 'keepup_checkins', { habit_id: habitId, date: d, count: 0 });
+  save(); return true;
+}
 export function setCount(habitId, d, count) {
   if (!editable(d)) return false;
   const m = state.checkins[habitId] || (state.checkins[habitId] = {});

@@ -1,6 +1,6 @@
 // Today: week strip, this week's summary, and one big tick per habit.
 import { hi } from '../ui/hicons.js';
-import { state, today, activeHabits, countFor, setCount, editable, currentBreak } from '../lib/store.js';
+import { state, today, activeHabits, countFor, setCount, editable, currentBreak, isSkipped } from '../lib/store.js';
 import { addDays, weekOf, isoWeekday } from '../lib/dates.js';
 import { habitStreak } from '../lib/streaks.js';
 import { COLOURS, inkOn } from '../lib/theme.js';
@@ -17,6 +17,8 @@ const DOW = ['', 'M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const fmtDay = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
 
 // Is the habit on the list for this day? "X a week" habits show every day.
+// Due, and not skipped: what the day's progress is measured against.
+export const owed = (h, d) => dueOn(h, d) && !isSkipped(h.id, d);
 export const dueOn = (h, d) => d >= h.start_date && (!h.end_date || d <= h.end_date) && (h.schedule_type !== 'weekdays' || h.schedule_days.includes(isoWeekday(d)));
 // One list, or (when any habit has a part of the day) Morning / Afternoon / Evening / Any time.
 const PARTS = [['morning', 'Morning'], ['afternoon', 'Afternoon'], ['evening', 'Evening'], [null, 'Any time']];
@@ -27,9 +29,9 @@ function habitLists(list, d) {
   let n = 0;
   return PARTS.map(([k, name]) => {
     const hs = list.filter(h => (h.time_of_day || null) === k); if (!hs.length) return '';
-    const now = d === today() && k === partNow(), left = hs.filter(h => countFor(h.id, d) < h.target_count).length;
+    const now = d === today() && k === partNow(), left = hs.filter(h => !isSkipped(h.id, d) && countFor(h.id, d) < h.target_count).length;
     const pop = !left && view.partDone === (k || 'any') ? 'pop' : '';
-    const out = `<h3 class="tod ${now ? 'now' : ''} ${left ? '' : 'all'} ${pop}"><span>${name}</span><small>${left ? `${left} to go` : `${I.check} done`}</small></h3>${ul(hs, n, `${name} habits`)}`;
+    const out = `<h3 class="tod ${now ? 'now' : ''} ${left || hs.every(h => isSkipped(h.id, d)) ? '' : 'all'} ${pop}"><span>${name}</span><small>${left ? `${left} to go` : hs.every(h => isSkipped(h.id, d)) ? 'skipped' : `${I.check} done`}</small></h3>${ul(hs, n, `${name} habits`)}`;
     n += hs.length; return out;
   }).join('');
 }
@@ -43,7 +45,7 @@ export function dueLine(h, d = today()) {
 export const streakOf = (h, upTo = today()) => habitStreak({ ...h, start: h.start_date }, state.checkins[h.id] || {}, { today: h.end_date && h.end_date < upTo ? h.end_date : upTo, weekStart: state.profile.week_start, freezesPerWeek: 1, breaks: state.breaks });
 
 function dayProgress(d) {
-  const hs = activeHabits().filter(h => dueOn(h, d) && h.schedule_type !== 'x_per_week');
+  const hs = activeHabits().filter(h => owed(h, d) && h.schedule_type !== 'x_per_week');
   if (!hs.length) return null;
   return hs.filter(h => countFor(h.id, d) >= h.target_count).length / hs.length;
 }
@@ -67,7 +69,7 @@ function weekSummary() {
   let due = 0, done = 0;
   for (const h of activeHabits()) {
     if (h.schedule_type === 'x_per_week') { due += h.times_per_week; let n = 0; for (let i = 0; i < 7; i++) { const d = addDays(w0, i); if (d <= t && countFor(h.id, d) >= h.target_count) n++; } done += Math.min(n, h.times_per_week); continue; }
-    for (let i = 0; i < 7; i++) { const d = addDays(w0, i); if (dueOn(h, d)) { due++; if (d <= t && countFor(h.id, d) >= h.target_count) done++; } }
+    for (let i = 0; i < 7; i++) { const d = addDays(w0, i); if (owed(h, d)) { due++; if (d <= t && countFor(h.id, d) >= h.target_count) done++; } }
   }
   if (!due) return '';
   const p = done / due;
@@ -79,7 +81,7 @@ function weekSummary() {
 const roll = (n, on) => `<span class="roll ${on ? 'go' : ''}" aria-hidden="true">${String(n).split('').map((c, i) => `<span style="--i:${i}">${c}</span>`).join('')}</span>`;
 
 function habitRow(h, d, i) {
-  const c = countFor(h.id, d), done = c >= h.target_count, col = COLOURS[h.colour] || COLOURS.tangerine;
+  const c = countFor(h.id, d), done = c >= h.target_count, skip = isSkipped(h.id, d), col = COLOURS[h.colour] || COLOURS.tangerine;
   const st = streakOf(h, d), lock = !editable(d), just = view.just === h.id;
   const frozenNow = st.current > 0 && st.frozen.length && st.frozen[st.frozen.length - 1] >= addDays(d, -6);
   const unit = st.unit === 'weeks' ? (st.current === 1 ? 'wk' : 'wks') : (st.current === 1 ? 'day' : 'days');
@@ -91,13 +93,13 @@ function habitRow(h, d, i) {
   // Evening, streak going, not done yet: say what's at stake.
   // A streak broken in the last day or two can be won back: say exactly what it takes.
   const rp = d === today() && st.repair, rpLine = rp && (rp.done && done ? `Tomorrow wins back ${rp.was} days` : rp.done || done ? `Today wins back ${rp.was} days` : `2 ticks win back ${rp.was} days`);
-  const atRisk = !done && st.current >= 3 && d === today() && !currentBreak(d) && h.schedule_type !== 'x_per_week' && new Date().getHours() >= 18;
+  const atRisk = !done && !skip && st.current >= 3 && d === today() && !currentBreak(d) && h.schedule_type !== 'x_per_week' && new Date().getHours() >= 18;
   const pct = n => Math.round(Math.min(1, n / h.target_count) * 100), pc = h.kind === 'count' ? pct(c) : 0, pp = just && view.justFrom != null ? pct(view.justFrom) : pc;
-  const label = `${h.name}: ${done ? 'done' : h.kind === 'count' ? `${c} of ${h.target_count}, tap to add one` : 'not done, tap to tick'}`;
-  return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}" data-hint="${h.kind === 'count' ? 'Tap to add one' : 'Tap to tick it off'}">
+  const label = `${h.name}: ${done ? 'done' : skip ? 'skipped, tap to tick instead' : h.kind === 'count' ? `${c} of ${h.target_count}, tap to add one` : 'not done, tap to tick'}`;
+  return `<li class="habit ${done ? 'done' : ''} ${skip ? 'skip' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}" data-hint="${h.kind === 'count' ? 'Tap to add one' : 'Tap to tick it off'}">
     <button class="h-main" data-a="habitMenu" data-id="${h.id}" aria-label="${esc(h.name)} options">
       <span class="h-ic" aria-hidden="true">${hi(h.icon)}</span>
-      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk || rp || /^Due (today|tomorrow)/.test(due) ? 'risk' : ''}">${rp ? rpLine : comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
+      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${!skip && (atRisk || rp) || !skip && /^Due (today|tomorrow)/.test(due) ? 'risk' : ''}">${skip ? 'Skipped · doesn’t count' : rp ? rpLine : comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
     </button>
     ${!st.current && !st.longest && !done ? '' : `<span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>`}
     <button class="tick ${h.kind === 'count' ? 'count' : ''}" data-a="tick" data-id="${h.id}" data-d="${d}" aria-label="${esc(label)}" aria-pressed="${done}" ${lock ? 'disabled' : ''} style="--pc:${pc};--pp:${pp}">
@@ -115,7 +117,7 @@ export function render() {
   const t = today(), d = view.day && view.day <= t ? view.day : t;
   const hs = activeHabits(), list = hs.filter(h => dueOn(h, d));
   // "X a week" habits show every day but don't have to be ticked every day.
-  const daily = list.filter(h => h.schedule_type !== 'x_per_week');
+  const daily = list.filter(h => h.schedule_type !== 'x_per_week' && !isSkipped(h.id, d));
   const doneN = daily.filter(h => countFor(h.id, d) >= h.target_count).length;
   const doneAll = daily.length && doneN === daily.length;
   const name = (state.profile.display_name || '').split(/\s+/)[0];
@@ -257,20 +259,20 @@ export function afterRender(root, rerender) {
 function partFinished(h, d) {
   const list = activeHabits().filter(x => dueOn(x, d));
   if (!list.some(x => x.time_of_day)) return false;
-  return list.filter(x => (x.time_of_day || null) === (h.time_of_day || null)).every(x => countFor(x.id, d) >= x.target_count);
+  return list.filter(x => (x.time_of_day || null) === (h.time_of_day || null)).every(x => isSkipped(x.id, d) || countFor(x.id, d) >= x.target_count);
 }
 export function tick(btn, rerender) {
   const id = btn.dataset.id, d = btn.dataset.d, h = state.habits.find(x => x.id === id); if (!h) return;
   const c = countFor(id, d), wasDone = c >= h.target_count;
   const next = h.kind === 'count' ? (wasDone ? 0 : c + 1) : (wasDone ? 0 : 1);
-  const hsBefore = activeHabits().filter(x => dueOn(x, d) && x.schedule_type !== 'x_per_week'), allBefore = hsBefore.every(x => countFor(x.id, d) >= x.target_count);
+  const hsBefore = activeHabits().filter(x => owed(x, d) && x.schedule_type !== 'x_per_week'), allBefore = hsBefore.every(x => countFor(x.id, d) >= x.target_count);
   const before = streakOf(h, d);
   if (!setCount(id, d, next)) return;
   const nowDone = next >= h.target_count;
   if (nowDone && !wasDone) {
     buzz(14); setTimeout(() => burst(document.querySelector(`.habit[data-id="${id}"] .tick`), COLOURS[h.colour]), 60);
     const all = hsBefore.length && hsBefore.every(x => countFor(x.id, d) >= x.target_count);
-    const doneN = activeHabits().filter(x => dueOn(x, d) && countFor(x.id, d) >= x.target_count).length;
+    const doneN = activeHabits().filter(x => owed(x, d) && countFor(x.id, d) >= x.target_count).length;
     SOUNDS.step(doneN - 1);
     const st = streakOf(h, d), hit = d === today() && h.schedule_type !== 'x_per_week' && MILESTONES.includes(st.current);
     if (before.repair && st.repaired.length > before.repaired.length) setTimeout(() => celebrate(st.current, h.name, COLOURS[h.colour], 'Streak repaired. Welcome back.', hi(h.icon)), 450);

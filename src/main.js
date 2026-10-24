@@ -16,7 +16,7 @@ import * as Squad from './screens/squad.js';
 import * as Me from './screens/me.js';
 import * as Intro from './screens/intro.js';
 import { openHabitForm } from './screens/habitForm.js';
-import { setCount, habitById, countFor, editable, today, endBreak } from './lib/store.js';
+import { setCount, habitById, countFor, editable, today, endBreak, isSkipped, skipDay } from './lib/store.js';
 import { syncLine, loadCloud, cloud } from './lib/session.js';
 import { install, hideNudge } from './ui/install.js';
 import { SOUNDS, buzz } from './ui/feedback.js';
@@ -90,11 +90,13 @@ function habitMenu(id) {
   const t = today(), d = Today.view.day && Today.view.day <= t ? Today.view.day : t, lock = !editable(d);
   const body = () => {
     const st = Today.streakOf(h), c = countFor(id, d), wk = st.unit === 'weeks';
+    const canSkip = !lock && h.schedule_type !== 'x_per_week' && c < h.target_count && Today.dueOn(h, d);
     return `<h2 class="sheet-h"><span class="sh-ic" aria-hidden="true" style="--hc:${COLOURS[h.colour]}">${hi(h.icon)}</span> ${esc(h.name)}</h2>
     <div class="hm-stats"><div><b>${st.current}</b><span class="muted small">${wk ? 'week' : 'day'} streak</span></div><div><b>${st.longest}</b><span class="muted small">best</span></div><div><b>${Object.values(state.checkins[id] || {}).filter(n => n >= h.target_count).length}</b><span class="muted small">all time</span></div></div>
     ${h.kind === 'count' && !lock ? `<div class="fld"><span>${d === t ? 'Today' : 'That day'}</span><div class="stepper" role="group" aria-label="Count"><button type="button" data-m="minus" aria-label="One less" ${c ? '' : 'disabled'}>−</button><b aria-live="polite">${c}</b> of ${h.target_count}<button type="button" data-m="plus" aria-label="One more">+</button></div></div>` : ''}
     <div class="stack"><button class="btn wide" data-m="share">${I.share} Share streak</button>
-      <div class="row gap"><button class="btn ghost grow" data-m="edit">Edit</button><button class="btn ghost grow" data-m="stats">Stats</button></div></div>`;
+      <div class="row gap"><button class="btn ghost grow" data-m="edit">Edit</button><button class="btn ghost grow" data-m="stats">Stats</button></div>
+      ${canSkip ? `<button class="btn ghost wide" data-m="skip">${isSkipped(id, d) ? 'Don’t skip after all' : d === t ? 'Skip today' : 'Skip this day'}</button><p class="muted small center">For a day it shouldn’t count, like being ill. Your streak stays as it is.</p>` : ''}</div>`;
   };
   let changed = false;
   const sh = openSheet(body(), {
@@ -107,6 +109,7 @@ function habitMenu(id) {
         return;
       }
       closeSheet(sh);
+      if (m === 'skip') { if (isSkipped(id, d)) setCount(id, d, 0); else { skipDay(id, d); toast(`<span class="t-one">Skipped ${esc(h.name)}</span><button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="0">Undo</button>`); } SOUNDS.undo(); buzz(8); render(); }
       if (m === 'edit') openHabitForm(id, render);
       if (m === 'stats') { NAV.tab = 'stats'; Stats.view.habit = id; render(); }
       if (m === 'share') ACTIONS.shareStreak(document.createElement('button'), id);

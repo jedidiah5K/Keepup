@@ -10,7 +10,7 @@ export function weekdayRates(habits, checkins, { from, to, dueOn, onBreak = () =
   let days = 0;
   for (const d of eachDay(from, to)) {
     if (onBreak(d)) continue;
-    const list = habits.filter(h => h.schedule_type !== 'x_per_week' && dueOn(h, d));
+    const list = habits.filter(h => h.schedule_type !== 'x_per_week' && dueOn(h, d) && checkins[h.id]?.[d] !== 0);   // 0 = skipped
     if (!list.length) continue;
     days++;
     const w = isoWeekday(d);

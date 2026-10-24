@@ -1,7 +1,7 @@
 // Trophy medals, drawn as small SVGs in the theme's colours. Locked ones are a faint dashed outline.
 import { TROPHIES, earned } from '../lib/trophies.js';
 import { state, today } from '../lib/store.js';
-import { streakOf, dueOn } from '../screens/today.js';
+import { streakOf, owed as dueOn } from '../screens/today.js';
 import { SOUNDS, buzz, confetti } from './feedback.js';
 
 const TINT = { streak: 'var(--accent)', total: 'var(--ink)', perfect: 'var(--done)', week: 'var(--done)', comeback: 'var(--freeze)', squad: '#7B4BC4' };

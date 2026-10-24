@@ -197,6 +197,12 @@ describe('breaks', () => {
     const r = habitStreak(gym, c, { today: addDays(next, 6), freezesPerWeek: 0, breaks: [{ start_date: addDays(MON, 1), end_date: addDays(MON, 3) }] });
     expect(r.current).toBe(2);
   });
+  it('a skipped day (count 0) neither counts nor breaks the streak', () => {
+    const c = counts(days(MON, 2), addDays(MON, 3)); c[addDays(MON, 2)] = 0;
+    const r = habitStreak(daily, c, { today: addDays(MON, 3), freezesPerWeek: 0 });
+    expect(r.current).toBe(3);
+    expect(completion(daily, c, MON, addDays(MON, 3))).toBe(1);
+  });
   it('completion leaves missed break days out', () => {
     expect(completion(daily, counts(days(MON, 2)), MON, addDays(MON, 3), [{ start_date: addDays(MON, 2), end_date: null }])).toBe(1);
   });

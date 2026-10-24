@@ -40,7 +40,7 @@ function dailyStreak(habit, counts, today, weekStart, allowance, off) {
   for (let i = 0; i < days.length; i++) {
     const d = days[i];
     if (isDone(habit, counts[d])) { run++; longest = Math.max(longest, run); continue; }
-    if (off(d)) continue;   // on a break: a miss doesn't count
+    if (off(d) || counts[d] === 0) continue;   // on a break, or skipped that day: doesn't count either way
     if (d === today) break; // still time today
     const wk = weekOf(d, weekStart);
     if (run > 0 && (usedInWeek[wk] || 0) < allowance(wk)) { usedInWeek[wk] = (usedInWeek[wk] || 0) + 1; frozen.push(d); continue; }
@@ -111,6 +111,6 @@ export function completion(habit, counts, from, to, breaks = []) {
     return Math.min(1, done / (weeks * (habit.times_per_week || 1)));
   }
   let due = 0, done = 0;
-  for (const d of eachDay(from, to)) if (isScheduled(habit, d)) { if (isDone(habit, counts[d])) { due++; done++; } else if (!off(d)) due++; }
+  for (const d of eachDay(from, to)) if (isScheduled(habit, d)) { if (isDone(habit, counts[d])) { due++; done++; } else if (!off(d) && counts[d] !== 0) due++; }
   return due ? done / due : 0;
 }

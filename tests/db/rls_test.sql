@@ -191,3 +191,12 @@ update keepup_habits set time_of_day = 'morning', cue = 'After my morning coffee
 select pg_temp.check((select time_of_day from keepup_habits where id = '30000000-0000-0000-0000-0000000000d1') = 'morning', 'a habit can have a part of the day and a cue');
 select pg_temp.fails($$update keepup_habits set time_of_day = 'night' where id = '30000000-0000-0000-0000-0000000000d1'$$, 'only morning, afternoon or evening');
 select pg_temp.fails(format($$update keepup_habits set cue = %L where id = '30000000-0000-0000-0000-0000000000d1'$$, repeat('x', 61)), 'a cue is at most 60 characters');
+-- a skipped day (count 0) gets no reminder
+reset role;
+delete from keepup_push_sent;
+update keepup_habits set end_date = null where id = '30000000-0000-0000-0000-0000000000d1';
+insert into keepup_push_tokens (user_id, kind, token, keys) values ('00000000-0000-0000-0000-000000000009', 'webpush', 'https://push.example/d2', '{"p256dh":"x","auth":"y"}') on conflict do nothing;
+select pg_temp.check(exists (select 1 from keepup_due_reminders() where title = 'Water'), 'reminder is back once the end date is gone');
+delete from keepup_push_sent;
+insert into keepup_checkins (habit_id, user_id, date, count) values ('30000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-000000000009', (now() at time zone 'Asia/Manila')::date, 0);
+select pg_temp.check(not exists (select 1 from keepup_due_reminders() where title = 'Water'), 'no reminder for a habit skipped today');

@@ -1,6 +1,6 @@
 // Stats: per-habit completion, streaks, and a calendar heatmap. All free.
 import { hi } from '../ui/hicons.js';
-import { state, today, activeHabits, countFor, habitById } from '../lib/store.js';
+import { state, today, activeHabits, countFor, habitById, isSkipped } from '../lib/store.js';
 import { addDays, weekOf } from '../lib/dates.js';
 import { completion, onBreak } from '../lib/streaks.js';
 import { weekdayRates } from '../lib/insights.js';
@@ -21,7 +21,7 @@ function heatmap(h, weeks = 18) {
   const frozen = new Set(streakOf(h).frozen);
   let cells = '';
   for (let w = 0; w < weeks; w++) for (let i = 0; i < 7; i++) {
-    const d = addDays(w0, w * 7 + i), c = countFor(h.id, d), lvl = d > t || d < h.start_date ? 'off' : c >= h.target_count ? 'full' : c > 0 ? 'part' : frozen.has(d) ? 'frz' : 'none';
+    const d = addDays(w0, w * 7 + i), c = countFor(h.id, d), lvl = d > t || d < h.start_date || isSkipped(h.id, d) ? 'off' : c >= h.target_count ? 'full' : c > 0 ? 'part' : frozen.has(d) ? 'frz' : 'none';
     cells += `<i class="hm-${lvl}" style="grid-column:${w + 1};grid-row:${i + 1};--c:${w + i}" title="${d}${c ? ': ' + c : ''}"></i>`;
   }
   const done = Object.keys(state.checkins[h.id] || {}).filter(d => d >= w0 && countFor(h.id, d) >= h.target_count).length;
@@ -66,7 +66,7 @@ function weekdays(hs, one = false) {
 function overview(hs) {
   const t = today(), daily = hs.filter(h => h.schedule_type !== 'x_per_week');
   const days = [...Array(30)].map((_, i) => addDays(t, i - 29)).map(d => {
-    const due = daily.filter(h => dueOn(h, d));
+    const due = daily.filter(h => dueOn(h, d) && !isSkipped(h.id, d));
     return { d, p: due.length ? due.filter(h => countFor(h.id, d) >= h.target_count).length / due.length : null };
   });
   const first = hs.reduce((m, h) => h.start_date < m ? h.start_date : m, t), perfect = days.filter(x => x.p === 1).length;
