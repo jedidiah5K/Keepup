@@ -738,3 +738,15 @@ input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); animatio
 @keyframes ring { 0%, 100% { rotate: 0deg; } 15%, 45% { rotate: 14deg; } 30%, 60% { rotate: -12deg; } 75% { rotate: 4deg; } }
 @media (prefers-reduced-motion: reduce) { .push-ask .ic-b svg { animation: none; } }
 @media (max-width: 359px) { .push-ask .ic-b { display: none; } }
+
+/* Stats: your week (strongest and hardest weekday) */
+.wd { margin: 0 0 2rem; }
+.wd-cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: .5rem; height: 92px; margin: .9rem 0 .6rem; }
+.wd-cols span { display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: .35rem; }
+.wd-cols i { align-self: end; width: 100%; max-width: 30px; height: max(4px, calc(var(--p) * 100%)); border-radius: 6px; background: color-mix(in oklab, var(--ink) 18%, transparent); transform-origin: bottom; animation: barUp .7s var(--out) both calc(var(--i) * 50ms + .2s); }
+.wd-cols .best i { background: var(--accent); }
+.wd-cols .worst i { background: repeating-linear-gradient(135deg, color-mix(in oklab, var(--ink) 28%, transparent) 0 3px, transparent 3px 6px); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink) 28%, transparent); }
+.wd-cols small { font: 500 .66rem/1 var(--mono); color: var(--muted); }
+.wd-cols .best small { color: var(--ink); }
+.wd-line { margin: 0; font-size: .92rem; line-height: 1.45; color: var(--muted); }
+.wd-line b { color: var(--ink); font-weight: 600; }

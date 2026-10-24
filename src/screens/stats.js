@@ -2,7 +2,8 @@
 import { hi } from '../ui/hicons.js';
 import { state, today, activeHabits, countFor, habitById } from '../lib/store.js';
 import { addDays, weekOf } from '../lib/dates.js';
-import { completion } from '../lib/streaks.js';
+import { completion, onBreak } from '../lib/streaks.js';
+import { weekdayRates } from '../lib/insights.js';
 import { COLOURS } from '../lib/theme.js';
 import { streakOf, dueOn } from './today.js';
 import { I } from '../ui/icons.js';
@@ -42,8 +43,23 @@ function detail(h) {
       <div class="tile"><span class="eyebrow">This month</span><b data-count="${Math.round(mo * 100)}" data-suffix="%">${pct(mo)}</b></div>
     </div>
     <section class="card"><div class="card-h"><span class="eyebrow">Last 18 weeks</span><span class="muted small">${total} check-ins all time</span></div>${heatmap(h)}</section>
+    ${h.schedule_type === 'x_per_week' ? '' : weekdays([h], true)}
     <p class="muted small">Streak freeze: each habit gets 1 a week, used for you on a missed day. No freeze left? Tick the next 2 days and the streak comes back.</p>
     <div class="row gap"><button class="btn grow" data-a="shareStreak" data-id="${h.id}">${I.share} Share streak</button><button class="btn ghost grow" data-a="editHabit" data-id="${h.id}">Edit habit</button></div>`;
+}
+
+// Strongest and hardest weekday over the last 8 weeks, once there's enough to say something true.
+const WD = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+function weekdays(hs, one = false) {
+  const t = today(), first = hs.reduce((m, h) => (h.start_date < m ? h.start_date : m), t);
+  const from = [addDays(t, -55), first].sort()[1];
+  const r = weekdayRates(hs, state.checkins, { from, to: addDays(t, -1), dueOn, onBreak: onBreak(state.breaks) });
+  if (!r.best) return '';
+  const p = n => Math.round(r.rates[n - 1] * 100);
+  const line = `${one ? 'You do this most' : 'You’re strongest'} on <b>${WD[r.best - 1]}s</b> (${p(r.best)}%). <b>${WD[r.worst - 1]}s</b> are the hardest (${p(r.worst)}%)${one ? '.' : ', so that’s the day to plan for.'}`;
+  return `<section class="wd"><div class="card-h"><span class="eyebrow">Your week</span><span class="muted small">Last ${Math.ceil(r.days / 7)} weeks</span></div>
+    <div class="wd-cols" role="img" aria-label="${WD.map((w, i) => `${w} ${r.rates[i] == null ? 'no data' : Math.round(r.rates[i] * 100) + '%'}`).join(', ')}">${r.rates.map((x, i) => `<span class="${i + 1 === r.best ? 'best' : i + 1 === r.worst ? 'worst' : ''}"><i style="--p:${x ?? 0};--i:${i}"></i><small>${WD[i][0]}</small></span>`).join('')}</div>
+    <p class="wd-line">${line}</p></section>`;
 }
 
 // The last 30 days across every habit: one bar per day, how much of the day's list got done.
@@ -65,6 +81,7 @@ function overview(hs) {
       <div class="ov-bars" role="img" aria-label="${perfect} perfect days in the last 30">${days.map((x, i) => `<i class="${x.p === 1 ? 'full' : ''} ${x.p == null || x.d < first ? 'off' : ''}" style="--p:${x.p ?? 0};--i:${i}" title="${x.d}"></i>`).join('')}</div>
       <div class="ov-axis muted small"><span>30 days ago</span><span>Today</span></div>
     </section>
+    ${weekdays(hs)}
     ${trophies()}`;
 }
 
