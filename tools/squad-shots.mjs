@@ -35,7 +35,7 @@ for (const scheme of ['light', 'dark']) {
     if (u.includes('/rpc/keepup_squad_board')) return json(board);
     if (u.includes('/rpc/keepup_import')) return json(0);
     if (u.includes('/rpc/keepup_nudge') || u.includes('/rpc/keepup_high_five')) return route.fulfill({ status: 204 });
-    if (u.includes('keepup_squad_members') && u.includes('keepup_squads')) return json([{ squad_id: 'sq', user_id: ME, role: 'owner', joined_at: day(30) + 'T00:00:00Z', keepup_squads: { id: 'sq', name: '6am Club', owner_id: ME, invite_code: 'abc123', created_at: day(30) } }]);
+    if (u.includes('keepup_squad_members') && u.includes('keepup_squads')) return json([{ squad_id: 'sq', user_id: ME, role: 'owner', joined_at: day(30) + 'T00:00:00Z', keepup_squads: { id: 'sq', name: '6am Club', owner_id: ME, invite_code: 'abc123', join_code: 'KX7PM2QD', created_at: day(30) } }]);
     if (u.includes('keepup_squad_members')) return json([ME, SAM, RIA, LEO].map((id, i) => ({ user_id: id, role: i ? 'member' : 'owner', joined_at: day(30 - i) + 'T00:00:00Z' })));
     if (u.includes('keepup_squad_shared_habits')) return json([{ habit_id: 'r' }, { habit_id: 's1' }, { habit_id: 's2' }, { habit_id: 'r1' }, { habit_id: 'l1' }]);
     if (u.includes('keepup_nudges')) return json([{ from_user: SAM, to_user: ME, date: day(0), kind: 'nudge' }, { from_user: LEO, to_user: ME, date: day(0), kind: 'five' }]);
@@ -59,6 +59,8 @@ for (const scheme of ['light', 'dark']) {
   await page.click('[data-tab="today"]'); await page.click('.habit[data-id="r"] .tick'); await page.waitForTimeout(400);
   await page.click('[data-tab="squad"]'); await page.waitForTimeout(1500);
   await page.screenshot({ path: `shots/21-squad-alldone-${scheme}-390.png` });
+  await page.click('[data-a="sqInvite"]'); await page.waitForTimeout(900);
+  await page.screenshot({ path: `shots/23-squad-invite-${scheme}-390.png` }); await page.keyboard.press('Escape'); await page.waitForTimeout(500);
   await page.click('[data-a="sqShare"]'); await page.waitForTimeout(1200);
   await page.screenshot({ path: `shots/22-squad-share-${scheme}-390.png` });
   if (errors.length) console.log(scheme, errors);

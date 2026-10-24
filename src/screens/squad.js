@@ -36,7 +36,7 @@ export function render() {
   const SQ = mod?.SQ;
   if (!SQ || !SQ.loaded) return `<header class="top"><div><div class="eyebrow">Squad</div><h1>Your <em>squad</em></h1></div></header><div class="skel" role="status" aria-label="Loading your squad"><i class="sk-hero"></i>${'<div class="sk-row"><i class="sk-face"></i><span><i></i><i></i></span></div>'.repeat(3)}</div>`;
   if (SQ.error && !SQ.squad) return pitch(`<p class="note">${esc(SQ.error)}</p><button class="btn wide mt3" data-a="sqReload">Try again</button>`);
-  if (!SQ.squad) return pitch(`<div class="stack mt3"><button class="btn wide" data-a="sqCreate">Create a squad</button><button class="btn ghost wide" data-a="sqJoin">I have an invite link</button></div>`);
+  if (!SQ.squad) return pitch(`<div class="stack mt3"><button class="btn wide" data-a="sqCreate">Create a squad</button><button class="btn ghost wide" data-a="sqJoin">Join with a code</button></div>`);
   return board(SQ);
 }
 
@@ -123,12 +123,23 @@ export const ACTIONS = {
   },
   sqJoin: () => openJoin(pendingJoin.code),
   sqInvite: async () => {
-    const m = await squads(), link = m.inviteLink(), text = `Join my squad "${m.SQ.squad.name}" on KeepUp. Let's keep our streaks alive together:`;
-    if (navigator.share) { try { await navigator.share({ title: 'KeepUp squad', text, url: link }); return; } catch (e) { if (e.name === 'AbortError') return; } }
-    openSheet(`<h2 class="sheet-h">Invite <em>friends</em></h2><p class="muted small">Send this link. Anyone with it can join while there's room (5 max).</p>
-      <div class="linkbox"><code>${esc(link)}</code></div><button class="btn wide mt3" data-copy="${esc(link)}">Copy link</button>`, {
+    const m = await squads(), link = m.inviteLink(), code = m.joinCode();
+    const text = code ? `Join my squad "${m.SQ.squad.name}" on KeepUp. In the app, go to Squad → Join with a code and type ${code}. Or tap:` : `Join my squad "${m.SQ.squad.name}" on KeepUp:`;
+    openSheet(`<h2 class="sheet-h">Invite <em>friends</em></h2>
+      ${code ? `<p class="muted small">They type this code in KeepUp: Squad → Join with a code. Works from the Home Screen app too.</p>
+      <button class="join-code" data-copy="${esc(code)}" aria-label="Code ${esc(code.split('').join(' '))}. Tap to copy.">${esc(code)}</button>` : ''}
+      <div class="row gap mt3"><button class="btn grow" data-send>Send invite</button><button class="btn ghost grow" data-copy="${esc(link)}">Copy link</button></div>
+      <p class="muted small mt2">Room for ${5 - m.SQ.members.length} more. Anyone with the code or link can join while there’s room.</p>`, {
       label: 'Invite friends',
-      mount: b => b.addEventListener('click', async e => { const c = e.target.closest('[data-copy]'); if (!c) return; try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent = 'Copied ✓'; buzz(10); } catch (x) { toast('Couldn’t copy. Press and hold the link instead.'); } }),
+      mount: b => b.addEventListener('click', async e => {
+        if (e.target.closest('[data-send]')) {
+          if (navigator.share) { try { await navigator.share({ title: 'KeepUp squad', text, url: link }); } catch (x) {} return; }
+          try { await navigator.clipboard.writeText(`${text} ${link}`); toast('Invite copied. Paste it to your friends.'); } catch (x) { toast('Couldn’t copy. Press and hold the code instead.'); }
+          return;
+        }
+        const c = e.target.closest('[data-copy]'); if (!c) return;
+        try { await navigator.clipboard.writeText(c.dataset.copy); buzz(10); toast('Copied.'); } catch (x) { toast('Couldn’t copy. Press and hold it instead.'); }
+      }),
     });
   },
   sqNudge: async el => {
@@ -185,13 +196,29 @@ export const ACTIONS = {
 
 // Opened from an invite link (?join=CODE) or by pasting one.
 export async function openJoin(code) {
-  if (!cloud.user) { pendingJoin.code = code; const a = await import('./account.js'); a.openAuth('up'); toast('Make a free account first, then you’ll join the squad.'); return; }
+  if (!cloud.user) {
+    pendingJoin.code = code;
+    // Opened in the browser. If KeepUp is already on their Home Screen, that copy has its own sign-in,
+    // so give them the code to type there instead of making a second account here.
+    const short = code && /^[A-Za-z2-9]{8}$/.test(code) ? code.toUpperCase().replace(/^(.{4})/, '$1 ') : null;
+    const signUp = async () => { const a = await import('./account.js'); a.openAuth('up'); toast('Make a free account first, then you’ll join the squad.'); };
+    if (!short) return signUp();
+    const sh = openSheet(`<h2 class="sheet-h">You’re <em>invited</em></h2>
+      <p class="muted small">Already have KeepUp on your Home Screen? Open it, go to Squad → Join with a code, and type:</p>
+      <div class="join-code" aria-label="Code ${esc(short.split('').join(' '))}">${esc(short)}</div>
+      <button class="btn wide mt3" data-new>I’m new to KeepUp</button>`, {
+      label: 'Squad invite',
+      mount: b => b.addEventListener('click', e => { if (e.target.closest('[data-new]')) { closeSheet(sh); signUp(); } }),
+    });
+    return;
+  }
   const m = await squads();
   const parse = v => { const s = String(v || '').trim(); try { return new URL(s).searchParams.get('join') || s; } catch (e) { return s; } };
   const body = (p, c) => p ? `<div class="join-preview"><div class="faces sm" aria-hidden="true">${['#FF5A1F', '#7B4BC4', '#1F9D7A', '#1E6FD9'].slice(0, Math.min(p.members, 4)).map(c => `<span style="--fc:${c}"></span>`).join('')}</div>
         <h2 class="sheet-h">Join <em>${esc(p.name)}</em>?</h2><p class="muted">${p.members} ${p.members === 1 ? 'person' : 'people'} in it. You choose which habits they see.</p>
         ${p.full_squad ? '<p class="note">This squad is full (5 max).</p>' : `<button class="btn wide mt3" data-join="${esc(c)}">Join squad</button>`}</div>`
-    : `<h2 class="sheet-h">Join a <em>squad</em></h2><form class="sq-form"><label class="fld"><span>Invite link</span><input name="c" placeholder="Paste the link here" autofocus></label>
+    : `<h2 class="sheet-h">Join a <em>squad</em></h2><form class="sq-form"><label class="fld"><span>Invite code</span><input name="c" class="code-in" placeholder="KX7P M2QD" autocomplete="off" autocapitalize="characters" spellcheck="false" autofocus></label>
+        <p class="muted small">Ask a friend in the squad for it. A pasted invite link works too.</p>
         <p class="auth-err" role="alert"></p><button class="btn wide" type="submit">Continue</button></form>`;
   let p = null; if (code) { try { p = await m.preview(code); } catch (e) {} }
   const sh = openSheet(body(p, code), {
@@ -199,7 +226,7 @@ export async function openJoin(code) {
     mount: b => {
       b.addEventListener('submit', async e => {
         e.preventDefault(); const c = parse(e.target.c.value); const pv = c && await m.preview(c).catch(() => null);
-        if (!pv) { b.querySelector('.auth-err').textContent = 'That link doesn’t work. Ask for a new one.'; return; }
+        if (!pv) { b.querySelector('.auth-err').textContent = 'That code doesn’t work. Check it, or ask for a new one.'; return; }
         b.innerHTML = body(pv, c);
       });
       b.addEventListener('click', async e => {

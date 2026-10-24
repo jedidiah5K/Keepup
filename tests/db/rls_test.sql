@@ -173,3 +173,10 @@ select pg_temp.fails($$select keepup_save_push('javascript:x', '{"p256dh":"k","a
 reset role; set role anon;
 select pg_temp.fails($$select keepup_save_push('https://push.example/z', '{"p256dh":"k","auth":"s"}')$$, 'signed-out visitor cannot save a push address');
 reset role;
+
+-- typed squad codes
+select pg_temp.check((select bool_and(join_code ~ '^[A-HJ-NP-Z2-9]{8}$') from keepup_squads), 'every squad gets a short code');
+select lower(substr(join_code, 1, 4) || ' ' || substr(join_code, 5)) as typed from keepup_squads where id = :'sq' \gset
+set role anon;
+select pg_temp.check((select members from keepup_invite_preview(:'typed')) >= 1, 'a code works typed in lower case with a space');
+reset role;

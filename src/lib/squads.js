@@ -15,7 +15,7 @@ export async function loadSquad() {
   SQ.loading = true; SQ.error = null; changed();
   try {
     const me = cloud.user.id, t = today();
-    const rows = await must(sb.from('keepup_squad_members').select('squad_id, user_id, role, joined_at, keepup_squads(id, name, owner_id, invite_code, created_at)').eq('user_id', me).limit(1));
+    const rows = await must(sb.from('keepup_squad_members').select('squad_id, user_id, role, joined_at, keepup_squads(*)').eq('user_id', me).limit(1));
     if (!rows.length) { Object.assign(SQ, { squad: null, members: [] }); return; }
     const sq = rows[0].keepup_squads;
     const [mem, board, shared, nudges] = await Promise.all([
@@ -60,7 +60,9 @@ export function refreshMe() {
   for (const h of me.habits.values()) h.counts[t] = state.checkins[h.id]?.[t] || 0;
 }
 export const streakNow = () => SQ.squad ? squadStreak(SQ.members, { today: today() }) : { current: 0, longest: 0 };
-export const inviteLink = () => `${location.origin}/?join=${encodeURIComponent(SQ.squad.invite_code)}`;
+// The short code to type in (KX7P M2QD). Missing until the setup-5 database update is pasted.
+export const joinCode = () => SQ.squad?.join_code ? SQ.squad.join_code.replace(/^(.{4})/, '$1 ') : null;
+export const inviteLink = () => `${location.origin}/?join=${encodeURIComponent(SQ.squad.join_code || SQ.squad.invite_code)}`;
 
 const err = e => { throw new Error(e.message || String(e)); };
 export async function createSquad(name) { const { error } = await sb.rpc('keepup_create_squad', { squad_name: name }); if (error) err(error); await loadSquad(); }
