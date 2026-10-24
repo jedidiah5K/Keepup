@@ -21,7 +21,7 @@ const range = (a, b, skip = []) => Array.from({ length: b - a + 1 }, (_, i) => a
 add(ME, 'Alex', 'r', 'Read 10 pages', 'i:book', 'grape', range(1, 20));
 add(SAM, 'Sam Rivera', 's1', 'Run', 'i:run', 'tangerine', range(0, 20));
 add(SAM, 'Sam Rivera', 's2', 'Water', 'i:water', 'lagoon', range(0, 20, [4]));
-add(RIA, 'Ria', 'r1', 'Journal', 'i:write', 'berry', range(1, 20));
+add(RIA, 'Ria', 'r1', 'Journal', 'i:write', 'berry', range(1, 20, [2]));
 add(LEO, 'Leo', 'l1', 'Gym', 'i:lift', 'ocean', range(0, 20, [2]));
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });

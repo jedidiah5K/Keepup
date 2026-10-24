@@ -24,7 +24,7 @@ const pitch = (cta) => `<header class="top"><div><div class="eyebrow">2–5 frie
       <p class="muted">Make a squad, drop the link in your group chat, and pick which habits your friends can see. Everything else stays private.</p>
       <ul class="ticks">
         <li>${I.check}<span>See who's checked in today</span></li>
-        <li>${I.check}<span>A squad streak that grows when everyone shows up</span></li>
+        <li>${I.check}<span>A squad streak that grows when everyone shows up, with one freeze a week for off days</span></li>
         <li>${I.check}<span>Nudge a friend who hasn't (once a day, no spam)</span></li>
       </ul>
       ${cta}
@@ -56,6 +56,7 @@ function board(SQ) {
         <svg class="rope-line" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0 5 Q 25 ${doneToday === ms.length ? 5 : 9}, 50 5 T 100 5" pathLength="100" style="--pct:${ms.length ? doneToday / ms.length * 100 : 0}"/></svg>
         ${ms.map((m, i) => `<span class="knot ${m.done.has(t) ? 'on' : ''}" style="--i:${i}">${face(m)}</span>`).join('')}
       </div>
+      ${(f => f ? `<p class="sq-frz">${I.snow}<span>Squad freeze used ${esc(new Date(f + 'T12:00').toLocaleDateString(undefined, { weekday: 'long' }))}. The streak lives on.</span></p>` : '')(st.frozen?.filter(x => x >= addDays(t, -6)).pop())}
       <p class="muted small">${alone ? 'Invite a friend to start your squad streak.' : doneToday === ms.length ? 'Everyone showed up today. The streak grows tonight.' : `${ms.length - doneToday} still to go today. Streak best: ${st.longest}.`}</p>
     </section>
     ${alone ? inviteCard() : ''}

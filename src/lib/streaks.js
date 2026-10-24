@@ -83,8 +83,11 @@ function weeklyStreak(habit, counts, today, weekStart, allowance, off) {
  * neither count nor break. Today never breaks it.
  * @param members [{ joined: 'YYYY-MM-DD', done: Set<'YYYY-MM-DD'> }]
  */
-export function squadStreak(members, { today, since } = {}) {
+// A squad day counts when everyone who'd joined by then ticked something. Once a week a day
+// someone missed is forgiven (a squad freeze), so one bad day doesn't wipe out the whole group.
+export function squadStreak(members, { today, since, freezesPerWeek = 1, weekStart = 1 } = {}) {
   let run = 0, longest = 0;
+  const frozen = [], used = {};
   const first = since || members.reduce((m, x) => (x.joined < m ? x.joined : m), today);
   for (const d of eachDay(first, today)) {
     const active = members.filter(m => m.joined < d);
@@ -92,9 +95,11 @@ export function squadStreak(members, { today, since } = {}) {
     const all = active.every(m => m.done.has(d));
     if (all) { run++; longest = Math.max(longest, run); continue; }
     if (d === today) break;
+    const wk = weekOf(d, weekStart);
+    if (run > 0 && (used[wk] || 0) < freezesPerWeek) { used[wk] = (used[wk] || 0) + 1; frozen.push(d); continue; }
     run = 0;
   }
-  return { current: run, longest };
+  return { current: run, longest, frozen };
 }
 
 /** Share of scheduled days done between from and to (inclusive), for stats. */

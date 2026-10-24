@@ -150,7 +150,19 @@ describe('squad streak', () => {
   it('breaks when one member misses a past day', () => {
     const a = { joined: '2026-10-01', done: set(days(MON, 3)) };
     const b = { joined: '2026-10-01', done: set(MON, addDays(MON, 2)) };
-    expect(squadStreak([a, b], { today: addDays(MON, 2), since: MON }).current).toBe(1);
+    expect(squadStreak([a, b], { today: addDays(MON, 2), since: MON, freezesPerWeek: 0 }).current).toBe(1);
+  });
+  it('forgives one missed day a week with a squad freeze', () => {
+    const a = { joined: '2026-10-01', done: set(days(MON, 4)) };
+    const b = { joined: '2026-10-01', done: set(MON, addDays(MON, 2), addDays(MON, 3)) }; // missed Tue
+    const r = squadStreak([a, b], { today: addDays(MON, 3), since: MON });
+    expect(r.current).toBe(3);
+    expect(r.frozen).toEqual([addDays(MON, 1)]);
+  });
+  it('a second miss in the same week still breaks it', () => {
+    const a = { joined: '2026-10-01', done: set(days(MON, 5)) };
+    const b = { joined: '2026-10-01', done: set(MON, addDays(MON, 2), addDays(MON, 4)) }; // missed Tue and Thu
+    expect(squadStreak([a, b], { today: addDays(MON, 4), since: MON }).current).toBe(1);
   });
 });
 

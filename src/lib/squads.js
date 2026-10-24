@@ -59,7 +59,7 @@ export function refreshMe() {
   for (const id of SQ.mine) { const h = state.habits.find(x => x.id === id); if (h && (state.checkins[id]?.[t] || 0) >= h.target_count) me.done.add(t); }
   for (const h of me.habits.values()) h.counts[t] = state.checkins[h.id]?.[t] || 0;
 }
-export const streakNow = () => SQ.squad ? squadStreak(SQ.members, { today: today() }) : { current: 0, longest: 0 };
+export const streakNow = () => SQ.squad ? squadStreak(SQ.members, { today: today(), weekStart: state.profile.week_start }) : { current: 0, longest: 0, frozen: [] };
 // The short code to type in (KX7P M2QD). Missing until the setup-5 database update is pasted.
 export const joinCode = () => SQ.squad?.join_code ? SQ.squad.join_code.replace(/^(.{4})/, '$1 ') : null;
 export const inviteLink = () => `${location.origin}/?join=${encodeURIComponent(SQ.squad.join_code || SQ.squad.invite_code)}`;
