@@ -17,8 +17,14 @@ const DOW = ['', 'M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const fmtDay = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
 
 // Is the habit on the list for this day? "X a week" habits show every day.
-export const dueOn = (h, d) => d >= h.start_date && (h.schedule_type !== 'weekdays' || h.schedule_days.includes(isoWeekday(d)));
-export const streakOf = (h, upTo = today()) => habitStreak({ ...h, start: h.start_date }, state.checkins[h.id] || {}, { today: upTo, weekStart: state.profile.week_start, freezesPerWeek: 1, breaks: state.breaks });
+export const dueOn = (h, d) => d >= h.start_date && (!h.end_date || d <= h.end_date) && (h.schedule_type !== 'weekdays' || h.schedule_days.includes(isoWeekday(d)));
+// Habits with an end date (an assignment, an exam): count down to it.
+export function dueLine(h, d = today()) {
+  if (!h.end_date || d > h.end_date) return '';
+  const n = Math.round((new Date(h.end_date + 'T12:00') - new Date(d + 'T12:00')) / 864e5);
+  return n === 0 ? 'Due today' : n === 1 ? 'Due tomorrow' : n < 7 ? `Due in ${n} days` : `Due ${new Date(h.end_date + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+}
+export const streakOf = (h, upTo = today()) => habitStreak({ ...h, start: h.start_date }, state.checkins[h.id] || {}, { today: h.end_date && h.end_date < upTo ? h.end_date : upTo, weekStart: state.profile.week_start, freezesPerWeek: 1, breaks: state.breaks });
 
 function dayProgress(d) {
   const hs = activeHabits().filter(h => dueOn(h, d) && h.schedule_type !== 'x_per_week');
@@ -61,7 +67,8 @@ function habitRow(h, d, i) {
   const st = streakOf(h, d), lock = !editable(d), just = view.just === h.id;
   const frozenNow = st.current > 0 && st.frozen.length && st.frozen[st.frozen.length - 1] >= addDays(d, -6);
   const unit = st.unit === 'weeks' ? (st.current === 1 ? 'wk' : 'wks') : (st.current === 1 ? 'day' : 'days');
-  const sub = h.schedule_type === 'x_per_week' ? `${st.weekDone} of ${st.weekTarget} this week` : h.kind === 'count' ? `${c} of ${h.target_count}` : h.schedule_type === 'weekdays' ? 'Some days' : 'Every day';
+  const base = h.schedule_type === 'x_per_week' ? `${st.weekDone} of ${st.weekTarget} this week` : h.kind === 'count' ? `${c} of ${h.target_count}` : h.schedule_type === 'weekdays' ? 'Some days' : 'Every day';
+  const due = dueLine(h, d), sub = due ? (h.schedule_type === 'x_per_week' || h.kind === 'count' ? `${base} · ${due}` : due) : base;
   // Lost a streak? Most people quit right here. Say something kind and keep their best on show.
   const comeback = !st.current && st.longest >= 3 && h.schedule_type !== 'x_per_week' && !c;
   // Evening, streak going, not done yet: say what's at stake.
@@ -73,7 +80,7 @@ function habitRow(h, d, i) {
   return `<li class="habit ${done ? 'done' : ''} ${just ? 'just' : ''}" style="--hc:${col};--hink:${inkOn(col)};--i:${i}" data-id="${h.id}" data-hint="${h.kind === 'count' ? 'Tap to add one' : 'Tap to tick it off'}">
     <button class="h-main" data-a="habitMenu" data-id="${h.id}" aria-label="${esc(h.name)} options">
       <span class="h-ic" aria-hidden="true">${hi(h.icon)}</span>
-      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk || rp ? 'risk' : ''}">${rp ? rpLine : comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
+      <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${atRisk || rp || /^Due (today|tomorrow)/.test(due) ? 'risk' : ''}">${rp ? rpLine : comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
     </button>
     <span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>
     <button class="tick ${h.kind === 'count' ? 'count' : ''}" data-a="tick" data-id="${h.id}" data-d="${d}" aria-label="${esc(label)}" aria-pressed="${done}" ${lock ? 'disabled' : ''} style="--pc:${pc};--pp:${pp}">

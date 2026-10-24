@@ -180,3 +180,10 @@ select lower(substr(join_code, 1, 4) || ' ' || substr(join_code, 5)) as typed fr
 set role anon;
 select pg_temp.check((select members from keepup_invite_preview(:'typed')) >= 1, 'a code works typed in lower case with a space');
 reset role;
+
+-- end dates: an ended habit gets no reminder
+reset role;
+delete from keepup_push_sent;
+update keepup_habits set end_date = start_date where id = '30000000-0000-0000-0000-0000000000d1';
+select pg_temp.check(not exists (select 1 from keepup_due_reminders() where title = 'Water'), 'no reminder after a habit has ended');
+select pg_temp.fails($$update keepup_habits set end_date = start_date - 1 where id = '30000000-0000-0000-0000-0000000000d1'$$, 'a habit cannot end before it starts');

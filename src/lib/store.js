@@ -53,7 +53,7 @@ export function saveHabit(h) {
     schedule_type: ['daily', 'weekdays', 'x_per_week'].includes(h.schedule_type) ? h.schedule_type : 'daily',
     schedule_days: (h.schedule_days || []).filter(d => d >= 1 && d <= 7), times_per_week: h.schedule_type === 'x_per_week' ? Math.min(7, Math.max(1, +h.times_per_week || 3)) : null,
     reminder_time: h.reminder_time || null, sort_order: h.sort_order ?? (Math.max(0, ...state.habits.map(x => x.sort_order + 1))),
-    start_date: h.start_date || today(), archived_at: h.archived_at || null, created_at: h.created_at || now, updated_at: now,
+    start_date: h.start_date || today(), end_date: /^\d{4}-\d{2}-\d{2}$/.test(h.end_date || '') ? h.end_date : null, archived_at: h.archived_at || null, created_at: h.created_at || now, updated_at: now,
   };
   if (row.schedule_type === 'weekdays' && !row.schedule_days.length) row.schedule_type = 'daily';
   const i = state.habits.findIndex(x => x.id === row.id);

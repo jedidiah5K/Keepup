@@ -48,6 +48,7 @@ language sql security definer set search_path = public as $$
     select pp.id as uid, pp.d, pp.local_now, h.id as hid, h.name, h.reminder_time, h.schedule_type
     from people pp join keepup_habits h on h.user_id = pp.id
     where h.archived_at is null and h.start_date <= pp.d
+      and (to_jsonb(h)->>'end_date' is null or (to_jsonb(h)->>'end_date')::date >= pp.d)  -- end_date may not exist yet
       and (h.schedule_type <> 'weekdays' or extract(isodow from pp.d)::smallint = any (h.schedule_days))
       and coalesce((select c.count from keepup_checkins c where c.habit_id = h.id and c.date = pp.d), 0) < h.target_count
       and (h.schedule_type <> 'x_per_week' or (

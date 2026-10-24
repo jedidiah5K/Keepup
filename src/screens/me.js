@@ -1,6 +1,6 @@
 // Me: look and feel, reminders, habits, your data.
 import { hi } from '../ui/hicons.js';
-import { state, setProfile, activeHabits, archivedHabits, archiveHabit, deleteHabit, reorder, exportJSON, exportCSV, currentBreak, startBreak, endBreak } from '../lib/store.js';
+import { state, today, setProfile, activeHabits, archivedHabits, archiveHabit, deleteHabit, reorder, exportJSON, exportCSV, currentBreak, startBreak, endBreak } from '../lib/store.js';
 import { THEMES, swapTheme } from '../lib/theme.js';
 import { I } from '../ui/icons.js';
 import { SOUNDS } from '../ui/feedback.js';
@@ -83,7 +83,7 @@ export function openManage(rerender) {
   const body = () => {
     const a = activeHabits(), z = archivedHabits();
     return `<h2 class="sheet-h">Manage habits</h2><p class="muted small">Drag ${I.drag} to reorder.</p>
-      <ul class="dsort mlist" aria-label="Habits in order">${a.map(h => `<li data-dragitem data-id="${h.id}"><button class="drag" data-drag aria-label="Move ${esc(h.name)}. Use arrow keys.">${I.drag}</button><span class="m-ic" aria-hidden="true">${hi(h.icon)}</span><span class="grow">${esc(h.name)}</span><button class="chip" data-m="archive" data-id="${h.id}">Archive</button></li>`).join('')}</ul>
+      <ul class="dsort mlist" aria-label="Habits in order">${a.map(h => `<li data-dragitem data-id="${h.id}"><button class="drag" data-drag aria-label="Move ${esc(h.name)}. Use arrow keys.">${I.drag}</button><span class="m-ic" aria-hidden="true">${hi(h.icon)}</span><span class="grow">${esc(h.name)}${h.end_date && h.end_date < today() ? `<span class="muted small block">Ended ${esc(new Date(h.end_date + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</span>` : ''}</span><button class="chip" data-m="archive" data-id="${h.id}">Archive</button></li>`).join('')}</ul>
       ${z.length ? `<h3 class="g-h mt3">Archived</h3><ul class="mlist">${z.map(h => `<li><span class="m-ic" aria-hidden="true">${hi(h.icon)}</span><span class="grow">${esc(h.name)}</span><button class="chip" data-m="restore" data-id="${h.id}">Restore</button><button class="chip danger-t" data-m="delete" data-id="${h.id}">Delete</button></li>`).join('')}</ul>` : ''}`;
   };
   const sh = openSheet(body(), {
