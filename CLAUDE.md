@@ -68,7 +68,7 @@ It prints `ok:` lines. Any `FAILED` line is a problem.
 - habit `time_of_day` and `cue`
 - no reminders on skipped days
 
-The edge function deploy and the VAPID secrets for reminders are unconfirmed. Steps are in `docs/` and the reminders how-to.
+The edge function deploy and the VAPID secrets for reminders are unconfirmed (ask Job). The function code is in `supabase/functions/keepup-reminders`.
 
 ## How things work (non-obvious)
 
