@@ -9,14 +9,15 @@ import './ui/dragsort.js';
 import { state, load, setProfile } from './lib/store.js';
 import { applyTheme } from './lib/theme.js';
 import { I } from './ui/icons.js';
-import { closeSheet, toast, openSheet, esc } from './ui/sheets.js';
+import { closeSheet, toast, openSheet, esc, confirmSheet } from './ui/sheets.js';
+import * as Swipe from './ui/swipe.js';
 import * as Today from './screens/today.js';
 import * as Stats from './screens/stats.js';
 import * as Squad from './screens/squad.js';
 import * as Me from './screens/me.js';
 import * as Intro from './screens/intro.js';
 import { openHabitForm } from './screens/habitForm.js';
-import { setCount, habitById, countFor, editable, today, endBreak, isSkipped, skipDay } from './lib/store.js';
+import { setCount, habitById, countFor, editable, today, endBreak, isSkipped, skipDay, deleteHabit } from './lib/store.js';
 import { syncLine, loadCloud, cloud } from './lib/session.js';
 import { install, hideNudge } from './ui/install.js';
 import { SOUNDS, buzz } from './ui/feedback.js';
@@ -55,6 +56,7 @@ function render() {
   if (!same) countUp(scr);
   parallax(scr);
   badge();
+  Swipe.restore();
 }
 
 // The app icon on the home screen shows how many habits are left today (iPhone needs notifications on).
@@ -133,7 +135,7 @@ const ACTIONS = {
   tick: el => Today.tick(el, render),
   undoTick: el => { setCount(el.dataset.id, el.dataset.d, +el.dataset.c); document.querySelector('.toast')?.remove(); render(); },
   newHabit: () => openHabitForm(null, render),
-  editHabit: el => openHabitForm(el.dataset.id, render),
+  editHabit: el => { Swipe.close(false); openHabitForm(el.dataset.id, render); },
   shareStreak: async (el, id = el.dataset.id) => {
     const h = habitById(id); if (!h) return;
     el.disabled = true; el.classList.add('busy');
@@ -173,6 +175,17 @@ const ACTIONS = {
   squadYes: () => { Today.squadLater(); swap(() => { NAV.tab = 'squad'; render(); }); setTimeout(() => { if (document.querySelector('[data-a="sqCreate"]')) ACTIONS.sqCreate(); }, 900); },
   squadNo: el => { Today.squadLater(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
   pushNo: el => { Today.notNow(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
+  swSkip: el => {
+    const { id, d } = el.dataset, h = habitById(id); if (!h) return;
+    if (isSkipped(id, d)) setCount(id, d, 0);
+    else if (skipDay(id, d)) toast(`<span class="t-one">Skipped ${esc(h.name)}</span><button class="link" data-a="undoTick" data-id="${id}" data-d="${d}" data-c="0">Undo</button>`);
+    SOUNDS.undo(); buzz(8); render();
+  },
+  swDelete: async el => {
+    const h = habitById(el.dataset.id); if (!h) return;
+    Swipe.close();
+    if (await confirmSheet(`Delete “${h.name}”?`, 'This removes the habit and all its check-ins for good. To keep the history, archive it from Edit instead.')) { deleteHabit(h.id); buzz(14); toast(`Deleted ${esc(h.name)}.`); render(); }
+  },
   hideInstall: el => { hideNudge(); const c = el.closest('.install-card'); c.classList.add('bye'); setTimeout(render, 280); },
 };
 
@@ -183,9 +196,14 @@ document.addEventListener('pointerdown', e => {
   holdT = setTimeout(() => { held = true; buzz(20); habitMenu(t.dataset.id); }, 480);
 });
 ['pointerup', 'pointercancel', 'pointerleave', 'scroll'].forEach(ev => document.addEventListener(ev, () => clearTimeout(holdT), { capture: true, passive: true }));
+document.addEventListener('keepup:swipe', () => clearTimeout(holdT));
 document.addEventListener('contextmenu', e => { if (e.target.closest('.tick')) e.preventDefault(); });
 
 document.addEventListener('click', e => {
+  // The click that ends a swipe, or a tap on a row that's swiped open, doesn't tick or open anything.
+  const row = e.target.closest('.habit');
+  if (row && Swipe.swiped) return;
+  if (row && !e.target.closest('.h-acts') && row.classList.contains('swiped')) { Swipe.close(); return; }
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
   if (held && el.dataset.a === 'tick') { held = false; return; }
   const a = el.dataset.a;

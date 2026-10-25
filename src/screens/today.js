@@ -86,6 +86,13 @@ function weekSummary() {
 // A number whose digits roll up when it changes.
 const roll = (n, on) => `<span class="roll ${on ? 'go' : ''}" aria-hidden="true">${String(n).split('').map((c, i) => `<span style="--i:${i}">${c}</span>`).join('')}</span>`;
 
+// Swipe a row left for its actions. Behind the row, hidden until swiped (the habit's sheet has the same ones).
+function swipeActs(h, d, lock, c, skip) {
+  const canSkip = !lock && h.schedule_type !== 'x_per_week' && (skip || c < h.target_count);
+  const b = (a, ic, l, cls = '') => `<button class="sw-b ${cls}" data-a="${a}" data-id="${h.id}" data-d="${d}" tabindex="-1">${ic}<span>${l}</span></button>`;
+  return `<div class="h-acts" aria-hidden="true">${canSkip ? b('swSkip', I.skip, skip ? 'Unskip' : 'Skip', 'sk') : ''}${b('editHabit', I.edit, 'Edit', 'ed')}${b('swDelete', I.trash, 'Delete', 'del')}</div>`;
+}
+
 function habitRow(h, d, i) {
   const c = countFor(h.id, d), done = c >= h.target_count, skip = isSkipped(h.id, d), col = COLOURS[h.colour] || COLOURS.tangerine;
   const st = streakOf(h, d), lock = !editable(d), just = view.just === h.id;
@@ -108,6 +115,7 @@ function habitRow(h, d, i) {
       <span class="h-txt"><span class="h-name"><span>${esc(h.name)}</span></span><span class="h-meta ${!skip && (atRisk || rp) || !skip && /^Due (today|tomorrow)/.test(due) ? 'risk' : ''}">${skip ? 'Skipped · doesn’t count' : rp ? rpLine : comeback ? `Fresh start · best ${st.longest}` : atRisk ? 'Keep it alive tonight' : esc(sub)}</span></span>
     </button>
     ${!st.current && !st.longest && !done ? '' : `<span class="h-streak ${frozenNow ? 'frozen' : ''} ${st.current ? '' : 'zero'}" aria-label="Streak ${st.current} ${unit}${frozenNow ? ', saved by a freeze' : ''}">${frozenNow ? I.snow : I.flame}${roll(st.current, just && done)}<small>${unit}</small></span>`}
+    ${swipeActs(h, d, lock, c, skip)}
     <button class="tick ${h.kind === 'count' ? 'count' : ''}" data-a="tick" data-id="${h.id}" data-d="${d}" aria-label="${esc(label)}" aria-pressed="${done}" ${lock ? 'disabled' : ''} style="--pc:${pc};--pp:${pp}">
       ${h.kind === 'count' ? `<svg class="cring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" pathLength="100"/></svg>` : ''}
       <span class="tick-fill" aria-hidden="true"></span>
