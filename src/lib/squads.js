@@ -66,7 +66,7 @@ export const inviteLink = () => `${location.origin}/?join=${encodeURIComponent(S
 
 const err = e => { throw new Error(e.message || String(e)); };
 export async function createSquad(name) { const { error } = await sb.rpc('keepup_create_squad', { squad_name: name }); if (error) err(error); await loadSquad(); }
-export async function joinSquad(code) { const { data, error } = await sb.rpc('keepup_join_squad', { code }); if (error) err(error); if (!data) throw new Error('That invite link doesn’t work. Ask for a new one.'); await loadSquad(); }
+export async function joinSquad(code) { const { data, error } = await sb.rpc('keepup_join_squad', { code }); if (error) err(error); if (!data) throw new Error('That code doesn’t work. Ask for a new one.'); await loadSquad(); }
 export async function preview(code) { const { data, error } = await sb.rpc('keepup_invite_preview', { code }); if (error) err(error); return data?.[0] || null; }
 export async function leaveSquad() { const { error } = await sb.rpc('keepup_leave_squad', { sq: SQ.squad.id }); if (error) err(error); await loadSquad(); }
 export async function removeMember(id) { const { error } = await sb.rpc('keepup_remove_member', { sq: SQ.squad.id, member: id }); if (error) err(error); await loadSquad(); }

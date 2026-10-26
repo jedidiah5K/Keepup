@@ -21,7 +21,7 @@ const pitch = (cta) => `<header class="top"><div><div class="eyebrow">2–5 frie
     <div class="squad-empty">
       <div class="faces" aria-hidden="true"><span style="--fc:#FF5A1F">JO</span><span style="--fc:#7B4BC4">MA</span><span style="--fc:#1F9D7A">SAM</span><span class="plus">${I.plus}</span></div>
       <h2 class="display">Streaks are easier <em>together.</em></h2>
-      <p class="muted">Make a squad, drop the link in your group chat, and pick which habits your friends can see. Everything else stays private.</p>
+      <p class="muted">Make a squad, send the code to your group chat, and pick which habits your friends can see. Everything else stays private.</p>
       <ul class="ticks">
         <li>${I.check}<span>See who's checked in today</span></li>
         <li>${I.check}<span>A squad streak that grows when everyone shows up, with one freeze a week for off days</span></li>
@@ -129,17 +129,18 @@ export const ACTIONS = {
   sqJoin: () => openJoin(pendingJoin.code),
   sqInvite: async () => {
     const m = await squads(), link = m.inviteLink(), code = m.joinCode();
-    const text = code ? `Join my squad "${m.SQ.squad.name}" on KeepUp. In the app, go to Squad → Join with a code and type ${code}. Or tap:` : `Join my squad "${m.SQ.squad.name}" on KeepUp:`;
+    // Old squads made before join codes only have the long invite code, so they still share a link.
+    const text = code ? `Join my squad "${m.SQ.squad.name}" on KeepUp ${location.origin}. Go to Squad → Join with a code and type ${code}` : `Join my squad "${m.SQ.squad.name}" on KeepUp: ${link}`;
     openSheet(`<h2 class="sheet-h">Invite <em>friends</em></h2>
-      ${code ? `<p class="muted small">They type this code in KeepUp: Squad → Join with a code. Works from the Home Screen app too.</p>
+      ${code ? `<p class="muted small">Your friends open KeepUp, go to Squad → Join with a code, and type:</p>
       <button class="join-code" data-copy="${esc(code)}" aria-label="Code ${esc(code.split('').join(' '))}. Tap to copy.">${esc(code)}</button>` : ''}
-      <div class="row gap mt3"><button class="btn grow" data-send>Send invite</button><button class="btn ghost grow" data-copy="${esc(link)}">Copy link</button></div>
-      <p class="muted small mt2">Room for ${5 - m.SQ.members.length} more. Anyone with the code or link can join while there’s room.</p>`, {
+      <div class="row gap mt3"><button class="btn grow" data-send>Send code</button><button class="btn ghost grow" data-copy="${esc(code || link)}">${code ? 'Copy code' : 'Copy link'}</button></div>
+      <p class="muted small mt2">Room for ${5 - m.SQ.members.length} more. Anyone with the code can join while there’s room.</p>`, {
       label: 'Invite friends',
       mount: b => b.addEventListener('click', async e => {
         if (e.target.closest('[data-send]')) {
-          if (navigator.share) { try { await navigator.share({ title: 'KeepUp squad', text, url: link }); } catch (x) {} return; }
-          try { await navigator.clipboard.writeText(`${text} ${link}`); toast('Invite copied. Paste it to your friends.'); } catch (x) { toast('Couldn’t copy. Press and hold the code instead.'); }
+          if (navigator.share) { try { await navigator.share({ title: 'KeepUp squad', text }); } catch (x) {} return; }
+          try { await navigator.clipboard.writeText(text); toast('Invite copied. Paste it to your friends.'); } catch (x) { toast('Couldn’t copy. Press and hold the code instead.'); }
           return;
         }
         const c = e.target.closest('[data-copy]'); if (!c) return;
@@ -223,7 +224,7 @@ export async function openJoin(code) {
         <h2 class="sheet-h">Join <em>${esc(p.name)}</em>?</h2><p class="muted">${p.members} ${p.members === 1 ? 'person' : 'people'} in it. You choose which habits they see.</p>
         ${p.full_squad ? '<p class="note">This squad is full (5 max).</p>' : `<button class="btn wide mt3" data-join="${esc(c)}">Join squad</button>`}</div>`
     : `<h2 class="sheet-h">Join a <em>squad</em></h2><form class="sq-form"><label class="fld"><span>Invite code</span><input name="c" class="code-in" placeholder="KX7P M2QD" autocomplete="off" autocapitalize="characters" spellcheck="false" autofocus></label>
-        <p class="muted small">Ask a friend in the squad for it. A pasted invite link works too.</p>
+        <p class="muted small">Ask a friend in the squad for it.</p>
         <p class="auth-err" role="alert"></p><button class="btn wide" type="submit">Continue</button></form>`;
   let p = null; if (code) { try { p = await m.preview(code); } catch (e) {} }
   const sh = openSheet(body(p, code), {
