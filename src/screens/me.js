@@ -7,7 +7,8 @@ import { SOUNDS } from '../ui/feedback.js';
 import { esc, openSheet, closeSheet, confirmSheet, toast } from '../ui/sheets.js';
 import { cloud, syncLine } from '../lib/session.js';
 import { canInstall, installed } from '../ui/install.js';
-import { pushState, enablePush, disablePush } from '../lib/push.js';
+// Loaded when needed: it brings the Supabase client, which the first screen shouldn't wait for.
+const push = () => import('../lib/push.js');
 import { TROPHIES } from '../lib/trophies.js';
 import { medal, myTrophies } from '../ui/medal.js';
 import { streakOf } from './today.js';
@@ -114,13 +115,13 @@ function pushRow(st) {
   return `<div class="row-set">${row('Notifications', 'Checking…')}</div>`;
 }
 export function afterRender(root) {
-  pushState().then(st => { pushRow.last = st; const el = root.querySelector('#push-row'); if (el) el.innerHTML = pushRow(st); }).catch(() => {});
+  push().then(m => m.pushState()).then(st => { pushRow.last = st; const el = root.querySelector('#push-row'); if (el) el.innerHTML = pushRow(st); }).catch(() => {});
 }
 async function togglePush(el, rerender) {
   el.disabled = true;
   try {
-    if (el.dataset.v === 'on') { const st = await enablePush(); toast(st === 'on' ? 'Notifications on. You’re set.' : 'Notifications are blocked. Allow them in Settings.'); }
-    else { await disablePush(); toast('Notifications off for this phone.'); }
+    if (el.dataset.v === 'on') { const st = await (await push()).enablePush(); toast(st === 'on' ? 'Notifications on. You’re set.' : 'Notifications are blocked. Allow them in Settings.'); }
+    else { await (await push()).disablePush(); toast('Notifications off for this phone.'); }
   } catch (e) { toast(navigator.onLine ? 'Couldn’t turn notifications on just now. Try again in a bit.' : 'You’re offline. Try again when you’re back online.'); }
   pushRow.last = null; rerender();
 }
