@@ -8,7 +8,10 @@ export { cloud };
 
 const URL = import.meta.env.VITE_SUPABASE_URL || 'https://xgmwqpasogwlvtjaapwo.supabase.co';
 const KEY = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_GLmm-oqwG3az6syLgjv1cA_3a8-oD9y';
-export const sb = createClient(URL, KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'keepup-auth', flowType: 'implicit' } });
+// A sign-in in the address bar is only taken from a password-reset link, and only when nobody is signed
+// in here, so a crafted link can't swap this phone onto someone else's account.
+const fromResetLink = (url, p) => !!p.access_token && p.type === 'recovery' && !localStorage.getItem('keepup-auth');
+export const sb = createClient(URL, KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: fromResetLink, storageKey: 'keepup-auth', flowType: 'implicit' } });
 
 const PROFILE_COLS = ['display_name', 'timezone', 'week_start', 'theme', 'sounds_on', 'haptics_on', 'evening_reminder_at'];
 const HABIT_COLS = ['id', 'name', 'icon', 'colour', 'kind', 'target_count', 'schedule_type', 'schedule_days', 'times_per_week', 'reminder_time', 'sort_order', 'start_date', 'end_date', 'time_of_day', 'cue', 'archived_at', 'created_at', 'updated_at'];
@@ -100,15 +103,21 @@ async function flush() {
 // Bring the account's data down. Only runs with nothing waiting to go up, so nothing local is lost.
 async function pull() {
   if (state.pending.length) return false;
-  const prof = await must(sb.from('keepup_profiles').select(PROFILE_COLS.join(',')).maybeSingle());
-  const habits = await must(withCols(cols => sb.from('keepup_habits').select(cols.join(',')).eq('user_id', cloud.user.id)));
-  const rows = [];
-  for (let from = 0; ; from += 1000) {
-    const page = await must(sb.from('keepup_checkins').select('habit_id,date,count').eq('user_id', cloud.user.id).order('date').range(from, from + 999));
-    rows.push(...page); if (page.length < 1000) break;
-  }
-  // Breaks are newer than the rest of the database: if the table isn't there yet, keep this phone's.
-  const br = await sb.from('keepup_breaks').select('id,start_date,end_date').eq('user_id', cloud.user.id);
+  // The four downloads don't depend on each other, so they run at the same time.
+  const checkins = async () => {
+    const rows = [];
+    for (let from = 0; ; from += 1000) {
+      const page = await must(sb.from('keepup_checkins').select('habit_id,date,count').eq('user_id', cloud.user.id).order('date').order('habit_id').range(from, from + 999));
+      rows.push(...page); if (page.length < 1000) return rows;
+    }
+  };
+  const [prof, habits, rows, br] = await Promise.all([
+    must(sb.from('keepup_profiles').select(PROFILE_COLS.join(',')).maybeSingle()),
+    must(withCols(cols => sb.from('keepup_habits').select(cols.join(',')).eq('user_id', cloud.user.id))),
+    checkins(),
+    // Breaks are newer than the rest of the database: if the table isn't there yet, keep this phone's.
+    sb.from('keepup_breaks').select('id,start_date,end_date').eq('user_id', cloud.user.id),
+  ]);
   if (state.pending.length) return false; // a change came in while we were downloading; next sync gets it
   if (!br.error) state.breaks = br.data;
   // Someone who already set KeepUp up on another phone skips the first-run steps here.
@@ -128,14 +137,20 @@ const site = () => location.origin + '/';
 export const signUp = (email, password) => sb.auth.signUp({ email, password, options: { emailRedirectTo: site() } });
 export const signIn = (email, password) => sb.auth.signInWithPassword({ email, password });
 export const resetPassword = email => sb.auth.resetPasswordForEmail(email, { redirectTo: site() });
-export const setPassword = password => sb.auth.updateUser({ password });
+// A new password signs out every other phone, in case someone else knew the old one.
+export async function setPassword(password) {
+  const res = await sb.auth.updateUser({ password });
+  if (!res.error) await sb.auth.signOut({ scope: 'others' }).catch(() => {});
+  return res;
+}
 export async function signOut() {
   await sync();
   // Stop this phone getting the account's reminders once it's signed out.
   try { const sub = await (await navigator.serviceWorker?.getRegistration())?.pushManager?.getSubscription(); if (sub) { await sb.from('keepup_push_tokens').delete().eq('token', sub.endpoint); await sub.unsubscribe(); } } catch (e) {}
-  await sb.auth.signOut();
-  // Clear this phone's copy so the next person to sign in here starts clean.
-  try { localStorage.removeItem('keepup:v1'); } catch (e) {}
+  await sb.auth.signOut().catch(() => {});
+  // Clear this phone's copy so the next person to sign in here starts clean. The sign-in itself is removed
+  // here too, because signOut() keeps it when it can't reach the server (offline with an expired token).
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith('keepup:') || k === 'keepup-auth') localStorage.removeItem(k); } catch (e) {}
   location.reload();
 }
 

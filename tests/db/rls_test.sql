@@ -77,6 +77,10 @@ select pg_temp.as_user('a');
 select keepup_remove_member(:'sq', '00000000-0000-0000-0000-00000000000b');
 select pg_temp.check((select count(*) from keepup_squad_members where squad_id = :'sq') = 4, 'owner removed a member');
 select pg_temp.check((select count(*) from keepup_squad_shared_habits where squad_id = :'sq') = 1, 'removed member''s habits are unshared');
+select pg_temp.check((select invite_code from keepup_squads where id = :'sq') <> :'code', 'removing someone gives the squad new codes');
+select pg_temp.as_user('b');
+select pg_temp.check(keepup_join_squad(:'code') is null, 'a removed member cannot rejoin with the old code');
+select pg_temp.as_user('a');
 
 -- owner leaves: ownership passes on
 select keepup_leave_squad(:'sq');
@@ -99,6 +103,10 @@ select pg_temp.check((select count(*) from keepup_checkins where habit_id = '100
 select keepup_import('[]', format('[{"habit_id":"10000000-0000-0000-0000-0000000000a1","date":"%s","count":5}]', current_date - 60)::jsonb);
 select pg_temp.check((select count from keepup_checkins where habit_id = '10000000-0000-0000-0000-0000000000a1' and date = current_date - 60) = 1, 'import never changes an old day already saved');
 select pg_temp.fails(format($$insert into keepup_checkins (habit_id, date) values ('10000000-0000-0000-0000-0000000000a1', %L)$$, current_date - 30), 'normal writes still limited to the last 7 days');
+select keepup_import('[]', format('[{"habit_id":"10000000-0000-0000-0000-0000000000a1","date":"%s","count":1}]', current_date - 30)::jsonb);
+select pg_temp.check(not exists (select 1 from keepup_checkins where habit_id = '10000000-0000-0000-0000-0000000000a1' and date = current_date - 30), 'a second import cannot backfill old days');
+select pg_temp.fails($$insert into keepup_push_tokens (user_id, kind, token, keys) values ('00000000-0000-0000-0000-00000000000a', 'webpush', 'https://evil.test/x', '{}')$$, 'push addresses cannot be written to the table directly');
+select pg_temp.fails($$insert into keepup_feedback (user_id, body) values ('00000000-0000-0000-0000-00000000000a', 'x')$$, 'the unused feedback table takes no writes');
 select pg_temp.as_user('c');
 select keepup_import('[{"id":"10000000-0000-0000-0000-0000000000a1","name":"Hijack","updated_at":"2030-01-01T00:00:00Z"}]',
   format('[{"habit_id":"10000000-0000-0000-0000-0000000000a1","date":"%s","count":1}]', current_date - 20)::jsonb);
@@ -142,7 +150,7 @@ insert into keepup_habits (id, user_id, name, reminder_time, start_date) values
   ('30000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-000000000009', 'Later', ((now() at time zone 'Asia/Manila') + interval '30 minutes')::time, current_date - 5);
 insert into keepup_checkins (habit_id, user_id, date) values ('30000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-000000000009', (now() at time zone 'Asia/Manila')::date);
 select pg_temp.check((select count(*) from keepup_due_reminders()) = 0, 'no reminders without notifications turned on');
-insert into keepup_push_tokens (user_id, kind, token, keys) values ('00000000-0000-0000-0000-000000000009', 'webpush', 'https://push.example/d', '{"p256dh":"x","auth":"y"}');
+insert into keepup_push_tokens (user_id, kind, token, keys) values ('00000000-0000-0000-0000-000000000009', 'webpush', 'https://fcm.googleapis.com/fcm/send/d', '{"p256dh":"x","auth":"y"}');
 create temp table got as select * from keepup_due_reminders();
 select pg_temp.check((select count(*) from got where title = 'Water') = 1, 'a habit not done yet gets its reminder');
 select pg_temp.check(not exists (select 1 from got where title in ('Read', 'Later')), 'no reminder for a done habit or one not due yet');
@@ -167,18 +175,26 @@ select pg_temp.fails($$select keepup_high_five((select squad_id from keepup_squa
 select pg_temp.as_user('a');
 select pg_temp.fails($$select keepup_due_reminders()$$, 'people cannot run the reminder job themselves');
 select pg_temp.check((select count(*) from keepup_push_tokens) = 0, 'others cannot see my notification tokens');
-select keepup_save_push('https://push.example/d', '{"p256dh":"k","auth":"s"}', 'iPhone');
+select keepup_save_push('https://fcm.googleapis.com/fcm/send/d', '{"p256dh":"k","auth":"s"}', 'iPhone');
 select pg_temp.check((select count(*) from keepup_push_tokens) = 1, 'a phone used by another account moves to whoever is signed in');
 select pg_temp.fails($$select keepup_save_push('javascript:x', '{"p256dh":"k","auth":"s"}')$$, 'only real push addresses are saved');
+select pg_temp.fails($$select keepup_save_push('https://169.254.169.254/latest', '{"p256dh":"k","auth":"s"}')$$, 'push addresses outside the push services are refused');
+select pg_temp.fails($$select keepup_save_push('https://fcm.googleapis.com.evil.test/x', '{"p256dh":"k","auth":"s"}')$$, 'look-alike push hosts are refused');
 reset role; set role anon;
-select pg_temp.fails($$select keepup_save_push('https://push.example/z', '{"p256dh":"k","auth":"s"}')$$, 'signed-out visitor cannot save a push address');
+select pg_temp.fails($$select keepup_save_push('https://fcm.googleapis.com/fcm/send/z', '{"p256dh":"k","auth":"s"}')$$, 'signed-out visitor cannot save a push address');
 reset role;
 
 -- typed squad codes
 select pg_temp.check((select bool_and(join_code ~ '^[A-HJ-NP-Z2-9]{8}$') from keepup_squads), 'every squad gets a short code');
 select lower(substr(join_code, 1, 4) || ' ' || substr(join_code, 5)) as typed from keepup_squads where id = :'sq' \gset
+select set_config('request.jwt.claim.sub', '', false);
 set role anon;
+select pg_temp.fails(format($$select * from keepup_invite_preview(%L)$$, :'typed'), 'signed-out visitors cannot check codes');
+reset role; set role authenticated; select pg_temp.as_user('a');
 select pg_temp.check((select members from keepup_invite_preview(:'typed')) >= 1, 'a code works typed in lower case with a space');
+select pg_temp.as_user('c');
+select (keepup_invite_preview('WRONG' || n)).name from generate_series(1, 30) n;
+select pg_temp.fails($$select * from keepup_invite_preview('WRONG31')$$, 'checking codes is rate-limited (30 an hour)');
 reset role;
 
 -- end dates: an ended habit gets no reminder
@@ -195,7 +211,7 @@ select pg_temp.fails(format($$update keepup_habits set cue = %L where id = '3000
 reset role;
 delete from keepup_push_sent;
 update keepup_habits set end_date = null where id = '30000000-0000-0000-0000-0000000000d1';
-insert into keepup_push_tokens (user_id, kind, token, keys) values ('00000000-0000-0000-0000-000000000009', 'webpush', 'https://push.example/d2', '{"p256dh":"x","auth":"y"}') on conflict do nothing;
+insert into keepup_push_tokens (user_id, kind, token, keys) values ('00000000-0000-0000-0000-000000000009', 'webpush', 'https://fcm.googleapis.com/fcm/send/d2', '{"p256dh":"x","auth":"y"}') on conflict do nothing;
 select pg_temp.check(exists (select 1 from keepup_due_reminders() where title = 'Water'), 'reminder is back once the end date is gone');
 delete from keepup_push_sent;
 insert into keepup_checkins (habit_id, user_id, date, count) values ('30000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-000000000009', (now() at time zone 'Asia/Manila')::date, 0);

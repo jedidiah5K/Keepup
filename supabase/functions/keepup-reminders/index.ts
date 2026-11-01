@@ -17,7 +17,9 @@ Deno.serve(async () => {
   const { data: phones } = await db.from('keepup_push_tokens').select('id, user_id, token, keys')
     .eq('kind', 'webpush').in('user_id', [...new Set(due.map((r: any) => r.user_id))]);
   let sent = 0; const gone: number[] = [];
-  await Promise.all(due.flatMap((r: any) => (phones || []).filter((p: any) => p.user_id === r.user_id).map(async (p: any) => {
+  // Only real push services (same list as keepup_push_host_ok in the database).
+  const PUSH = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)\//;
+  await Promise.all(due.flatMap((r: any) => (phones || []).filter((p: any) => p.user_id === r.user_id && PUSH.test(p.token)).map(async (p: any) => {
     try {
       await webpush.sendNotification({ endpoint: p.token, keys: p.keys },
         JSON.stringify({ title: r.title, body: r.body, tag: r.tag, url: '/' }), { TTL: 60 * 60, urgency: 'normal' });

@@ -231,8 +231,9 @@ export async function openJoin(code) {
     label: 'Join a squad',
     mount: b => {
       b.addEventListener('submit', async e => {
-        e.preventDefault(); const c = parse(e.target.c.value); const pv = c && await m.preview(c).catch(() => null);
-        if (!pv) { b.querySelector('.auth-err').textContent = 'That code doesn’t work. Check it, or ask for a new one.'; return; }
+        e.preventDefault(); const c = parse(e.target.c.value); let tooMany = null;
+        const pv = c && await m.preview(c).catch(x => { if (/too many/i.test(x?.message)) tooMany = x.message; return null; });
+        if (!pv) { b.querySelector('.auth-err').textContent = tooMany || 'That code doesn’t work. Check it, or ask for a new one.'; return; }
         b.innerHTML = body(pv, c);
       });
       b.addEventListener('click', async e => {
